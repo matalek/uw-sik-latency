@@ -25,6 +25,7 @@
 #define ESC_STR "\033"
 
 uint16_t udp_port_num = 3382; // configured by -u option
+uint16_t ui_port_num = 3637; // configured by -U option
 
 void ui() {
 	
@@ -132,13 +133,34 @@ static void catch_int (int sig) {
           "Signal %d catched. No new connections will be accepted.\n", sig);
 }
 
-int main () {
+/* void check_argument_presence(int i, int argc, char program[], char option) {
+	if (i == argc - 1)
+		fatal("%s: option requires an argument -- '%c'\n", program, option);
+} */
+
+#define check_argument_presence(option) if (i == argc - 1) \
+	fatal("%s: option requires an argument -- '%c'\n", argv[0], option);
+
+int main (int argc, char *argv[]) {
+	int i;
+
+	// parsing arguments
+	for (i = 1; i < argc; ++i) {
+		if (!strcmp(argv[i], "-u")) {
+			check_argument_presence('u'); //(i, argc, argv[0], 'u');
+			udp_port_num = atoi(argv[++i]);
+		} else if (!strcmp(argv[i], "-U")) {
+			check_argument_presence('U'); //(i, argc, argv[0], 'U');
+			ui_port_num	= atoi(argv[++i]);
+		}
+	}
+	
   struct pollfd client[_POSIX_OPEN_MAX];
   struct sockaddr_in server;
   char buf[BUF_SIZE];
   size_t length;
   ssize_t rval;
-  int msgsock, activeClients, i, ret;
+  int msgsock, activeClients, ret;
 
   // end program after Ctrl+C
   if (signal(SIGINT, catch_int) == SIG_ERR) {
