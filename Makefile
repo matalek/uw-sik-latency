@@ -6,7 +6,7 @@ LFLAGS	= -Wall
 
 
 opoznienia: opoznienia.o err.o
-	$(CC) $(LFLAGS) $^ -o $@
+	$(CC) $(LFLAGS) $^ -o $@ -lpthread
 
 .PHONY: clean TARGET
 clean:

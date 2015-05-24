@@ -12,6 +12,9 @@
 #include <poll.h>
 #include <signal.h>
 #include <netdb.h>
+#include <pthread.h>
+#include <arpa/inet.h>
+#include <errno.h>
 
 #include "err.h"
 
@@ -27,7 +30,8 @@
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
 
-void ui() {
+void *ui_connection(void *s_ptr) {
+
 	
   int sock, msg_sock;
   struct sockaddr_in server_address;
@@ -37,6 +41,7 @@ void ui() {
   char buffer[BUFFER_SIZE];
   ssize_t len, snd_len;
 
+	/*
   sock = socket(PF_INET, SOCK_STREAM, 0); // creating IPv4 TCP socket
   if (sock <0)
     syserr("socket");
@@ -56,27 +61,33 @@ void ui() {
     syserr("listen");
 
   deb(printf("accepting ui client connections on port %hu\n", ntohs(server_address.sin_port));)
+	*/
+
+	sock = *(int *)s_ptr;
+	free(s_ptr);
+	
   for (;;) {
-    client_address_len = sizeof(client_address);
+    /*client_address_len = sizeof(client_address);
     // get client connection from the socket
      msg_sock = accept(sock, (struct sockaddr *) &client_address, &client_address_len);
     if (msg_sock < 0)
       syserr("accept");
-    do {
-      len = read(msg_sock, buffer, sizeof(buffer));
+    */ do {
+      len = read(sock, buffer, sizeof(buffer));
       if (len < 0)
         syserr("reading from client socket");
       else {
 				len = snprintf(buffer, 10, "\033[2J");
-        snd_len = write(msg_sock, buffer, len);
+        snd_len = write(sock, buffer, len);
         if (snd_len != len)
           syserr("writing to client socket");
       }
     } while (len > 0);
     printf("ending connection\n");
-    if (close(msg_sock) < 0)
+    if (close(sock) < 0)
       syserr("close");
   }
+  
 }
 
 void udp_delay_server(int sock) {
@@ -176,9 +187,26 @@ int main (int argc, char *argv[]) {
   }
   activeClients = 0;
 
-  // create socket for UDP delay server
-  client[0].fd = socket(AF_INET, SOCK_DGRAM, 0);
+  /* Tworzymy gniazdko centrali */
+  client[0].fd = socket(PF_INET, SOCK_STREAM, 0);
   if (client[0].fd < 0) {
+    perror("Opening stream socket");
+    exit(EXIT_FAILURE);
+  }
+
+  /* Co do adresu nie jesteśmy wybredni */
+  server.sin_family = AF_INET;
+  server.sin_addr.s_addr = htonl(INADDR_ANY);
+  server.sin_port = htons(ui_port_num);
+  if (bind(client[0].fd, (struct sockaddr*)&server,
+           (socklen_t)sizeof(server)) < 0) {
+    perror("Binding stream socket");
+    exit(EXIT_FAILURE);
+  }
+
+  // create socket for UDP delay server
+  client[1].fd = socket(AF_INET, SOCK_DGRAM, 0);
+  if (client[1].fd < 0) {
     perror("Opening stream socket");
     exit(EXIT_FAILURE);
   }
@@ -186,18 +214,17 @@ int main (int argc, char *argv[]) {
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = htonl(INADDR_ANY);
   server.sin_port = htons(udp_port_num);
-  if (bind(client[0].fd, (struct sockaddr*)&server,
+  if (bind(client[1].fd, (struct sockaddr*)&server,
            (socklen_t)sizeof(server)) < 0) {
     perror("Binding stream socket");
     exit(EXIT_FAILURE);
   }
 
-
   /* Zapraszamy klientów */
-  /*if (listen(client[0].fd, 5) == -1) {
+  if (listen(client[0].fd, 5) == -1) {
     perror("Starting to listen");
     exit(EXIT_FAILURE);
-  }*/
+  }
 
   /* Do pracy */
   do {
@@ -208,21 +235,65 @@ int main (int argc, char *argv[]) {
         perror("close");
       client[0].fd = -1;
     }
-
+		
     /* Czekamy przez 5000 ms */
     ret = poll(client, _POSIX_OPEN_MAX, 5000);
     if (ret < 0)
       perror("poll");
     else if (ret > 0) {
-
 			
-      if (finish == FALSE && (client[0].revents & POLLIN)) {
-				// query for UDP delay server
-				udp_delay_server(client[0].fd);
+			// new telnet connection
+			if (finish == FALSE && (client[0].revents & POLLIN)) {
+				msgsock = accept(client[0].fd, (struct sockaddr*)0, (socklen_t*)0);
+				if (msgsock == -1)
+					perror("accept"); //exit(EXIT_FAILURE); ???
+				else {
+
+					int *con;
+					pthread_t t;
+
+					// only for this thread
+					con = malloc(sizeof(int));
+					if (!con) {
+						perror("malloc");
+						exit(EXIT_FAILURE);
+					}
+					*con = msgsock;
+
+					if (pthread_create(&t, 0, ui_connection, con) == -1) {
+						perror("pthread_create");
+						exit(EXIT_FAILURE);
+					}
+					
+					// do not wait for this thread
+					if (pthread_detach(t) == -1) {
+						perror("pthread_detach");
+						exit(EXIT_FAILURE);
+					}
+
+					/*
+					for (i = 2; i < _POSIX_OPEN_MAX; ++i) {
+						if (client[i].fd == -1) {
+							client[i].fd = msgsock;
+							activeClients += 1;
+							break;
+						}
+					}
+					if (i >= _POSIX_OPEN_MAX) {
+						fprintf(stderr, "Too many clients\n");
+						if (close(msgsock) < 0)
+							perror("close");
+					} */
+				} 
+			}
+
+			// query for UDP delay server
+      if (finish == FALSE && (client[1].revents & POLLIN)) {
+				udp_delay_server(client[1].fd);
       } 
 
-      /*
-      for (i = 1; i < _POSIX_OPEN_MAX; ++i) {
+      
+      for (i = 2; i < _POSIX_OPEN_MAX; ++i) {
         if (client[i].fd != -1
             && (client[i].revents & (POLLIN | POLLERR))) {
           rval = read(client[i].fd, buf, BUF_SIZE);
@@ -244,7 +315,6 @@ int main (int argc, char *argv[]) {
             printf("-->%.*s\n", (int)rval, buf);
         }
       }
-      */ 
     }
     else
       fprintf(stderr, "Do something else\n");
