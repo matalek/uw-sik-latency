@@ -22,13 +22,12 @@
 
 #define BUFFER_SIZE   1000
 #define QUEUE_LENGTH     5
-#define DEFAULT_UI_PORT_NUM 3637 // configured by -U option
-#define DEFAULT_UI_TIME 1 // configured by -v option
 
 #define ESC_STR "\033"
 
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
+double ui_refresh_time = 1; // configured by -v option
 
 void *ui_connection(void *s_ptr) {
 
@@ -65,14 +64,16 @@ void *ui_connection(void *s_ptr) {
 
 	sock = *(int *)s_ptr;
 	free(s_ptr);
-	
-  for (;;) {
+
+	int i;
+  for (i = 0;; i++) {
     /*client_address_len = sizeof(client_address);
     // get client connection from the socket
      msg_sock = accept(sock, (struct sockaddr *) &client_address, &client_address_len);
     if (msg_sock < 0)
       syserr("accept");
-    */ do {
+    */
+    /* do {
       len = read(sock, buffer, sizeof(buffer));
       if (len < 0)
         syserr("reading from client socket");
@@ -86,6 +87,12 @@ void *ui_connection(void *s_ptr) {
     printf("ending connection\n");
     if (close(sock) < 0)
       syserr("close");
+		*/
+		len = snprintf(buffer, 40, "\033[2J bardzo fajna wiadomość %d\n", i);
+		snd_len = write(sock, buffer, len);
+		if (snd_len != len)
+			syserr("writing to client socket");
+		sleep(ui_refresh_time);
   }
   
 }
