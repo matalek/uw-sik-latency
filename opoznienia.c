@@ -65,6 +65,16 @@ void *ui_connection(void *s_ptr) {
 	sock = *(int *)s_ptr;
 	free(s_ptr);
 
+	len = snprintf(buffer, 4, "%c%c%c", 255, 253, 1);
+	write(sock, buffer, len);
+
+	len = read(sock, buffer, sizeof(buffer));
+	if (len < 0)
+		syserr("reading from client socket");
+
+	//len = snprintf(buffer, 3, "%c%c%c", 255, 251, 1);
+	//write(sock, buffer, len);
+
 	int i;
   for (i = 0;; i++) {
     /*client_address_len = sizeof(client_address);
@@ -88,10 +98,20 @@ void *ui_connection(void *s_ptr) {
     if (close(sock) < 0)
       syserr("close");
 		*/
-		len = snprintf(buffer, 40, "\033[2J bardzo fajna wiadomość %d\n", i);
+		
+		
+		//len = snprintf(buffer, 100, "%c[2J bardzo fajna wiadomość %d\n\n\n\n\n\n\n\n\n\n\ntak\n\n\n\nnie\n\n\n\n", 27, i);
+		len = snprintf(buffer, 20, "bardzo fajnie\n");
 		snd_len = write(sock, buffer, len);
 		if (snd_len != len)
 			syserr("writing to client socket");
+		len = read(sock, buffer, sizeof(buffer));
+		if (len < 0)
+			syserr("reading from client socket");
+		else {
+			printf("%s\n", buffer);
+		}
+		printf("czekam\n");
 		sleep(ui_refresh_time);
   }
   
