@@ -1,12 +1,13 @@
 TARGET: opoznienia
 
-CC	= cc
-CFLAGS	= -Wall -O2
-LFLAGS	= -Wall
+CC = g++
+CXX = g++
+CPPFLAGS = -std=c++11 -Wall -lboost_system -lboost_program_options
+
 
 
 opoznienia: opoznienia.o err.o
-	$(CC) $(LFLAGS) $^ -o $@ -lpthread
+	$(CXX) $^ -o $@ $(CPPFLAGS)
 
 .PHONY: clean TARGET
 clean:
