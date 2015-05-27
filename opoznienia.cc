@@ -234,47 +234,33 @@ void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffer
 void send_a_query(udp::socket& socket) {
 	deb(cout << "zaczynam wysyłać mdnsa\n";)
 	try {
-		/*
-		udp::resolver resolver(io_service);
-		udp::resolver::query query(udp::v4(), argv[1], "daytime");
-		udp::endpoint receiver_endpoint = *resolver.resolve(query);
-		*/
-
 		udp::endpoint receiver_endpoint;
 		receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
 		receiver_endpoint.port(MDNS_PORT_NUM);
 
+		// ID, Flags (0 for query), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
 		uint16_t header[] = {0, 0, htons(1), 0, 0, 0};
 		std::vector<boost::asio::const_buffer> buffers;
 		buffers.push_back(boost::asio::buffer(header));
 
+		// FQDN specified by a list of component strings
 		std::ostringstream oss;
 		string fqdn[] = {"_opoznienie", "_udp", "_local"};
 		for (auto component : fqdn) {
 			uint8_t len = static_cast<uint8_t>(component.length());
-			cout << component << " " << component.length() << " " << len << "\n";
-			
 			oss << len << component;
-			
-			//char tak[] = {9, 5, 6, 7};
-			//buffers.push_back(boost::asio::buffer(tak));
-			//~ char len_text[component.length() + 1];
-			//string len_text;
-			//~ snprintf(len_text, component.length() + 1, "%c%s", len, &component);
-			//buffers.push_back(boost::asio::buffer(&len, sizeof(len)));
-			//cout << "wstawiam " << oss.str() << "\n";
-			
 		}
 		buffers.push_back(boost::asio::buffer(oss.str()));
+
+		// terminating FQDN with null byte
 		uint8_t null_byte = 0;
 		buffers.push_back(boost::asio::buffer(&null_byte, 1));
 
+		// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
 		uint16_t flags[] = {htons(1), htons(1)};
 		buffers.push_back(boost::asio::buffer(flags));
 		
-
 		socket.send_to(buffers, receiver_endpoint);
-
 
 		deb(cout << "wysłano mdns\n";)
 	}
