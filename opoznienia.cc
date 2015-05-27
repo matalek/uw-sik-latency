@@ -250,9 +250,9 @@ void send_query(udp::socket& socket, dns_type type, vector<string> fqdn) {
 
 		// FQDN specified by a list of component strings
 		std::ostringstream oss;
-		for (auto component : fqdn) {
-			uint8_t len = static_cast<uint8_t>(component.length());
-			oss << len << component;
+		for (int i = 0; i < fqdn.size(); i++) {
+			uint8_t len = static_cast<uint8_t>(fqdn[i].length());
+			oss << len << fqdn[i];
 		}
 		buffers.push_back(boost::asio::buffer(oss.str()));
 
