@@ -230,8 +230,12 @@ void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffer
 	buffers.push_back(boost::asio::buffer(&body.address_, sizeof(body.address_)));
 }
 
+enum dns_type {
+	A = 1,
+	PTR = 12
+};
 
-void send_a_query(udp::socket& socket) {
+void send_query(udp::socket& socket, dns_type type, vector<string> fqdn) {
 	deb(cout << "zaczynam wysyłać mdnsa\n";)
 	try {
 		udp::endpoint receiver_endpoint;
@@ -245,7 +249,6 @@ void send_a_query(udp::socket& socket) {
 
 		// FQDN specified by a list of component strings
 		std::ostringstream oss;
-		string fqdn[] = {"_opoznienie", "_udp", "_local"};
 		for (auto component : fqdn) {
 			uint8_t len = static_cast<uint8_t>(component.length());
 			oss << len << component;
@@ -257,7 +260,7 @@ void send_a_query(udp::socket& socket) {
 		buffers.push_back(boost::asio::buffer(&null_byte, 1));
 
 		// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
-		uint16_t flags[] = {htons(1), htons(1)};
+		uint16_t flags[] = {htons(type), htons(1)};
 		buffers.push_back(boost::asio::buffer(flags));
 		
 		socket.send_to(buffers, receiver_endpoint);
@@ -267,7 +270,6 @@ void send_a_query(udp::socket& socket) {
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
-	
 }
 
 int main(int argc, char *argv[]) {
@@ -316,7 +318,7 @@ int main(int argc, char *argv[]) {
 		
 		
 
-		send_a_query(socket);
+		send_query(socket, dns_type::PTR, {"_opoznienie", "_udp", "_local"});
 
 		//io_service.run();
 
