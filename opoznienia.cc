@@ -10,6 +10,7 @@
 #include <endian.h>
 #include <algorithm>
 #include <sstream>
+#include <stdio.h>
 
 #include "err.h"
 
@@ -31,6 +32,8 @@ using boost::asio::ip::tcp;
 #define QUEUE_LENGTH     5
 
 #define MAX_LINES 24
+
+#define MDNS_PORT_NUM 5353
 
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
@@ -79,10 +82,7 @@ void udp_delay_server() {
 		std::cerr << e.what() << std::endl;
 	}
 
-	cout << "wątek\n";
 }
-
-using boost::asio::ip::tcp;
 
 std::string make_daytime_string()
 {
@@ -214,8 +214,77 @@ class tcp_server {
 		tcp::acceptor acceptor_;
 };
 
+struct mdns_body {
+	uint16_t type_;
+	uint16_t class_;
+	int32_t ttl_;
+	uint16_t length_;
+	uint32_t address_;
+};
 
-int main (int argc, char *argv[]) {
+void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffers) {
+	buffers.push_back(boost::asio::buffer(&body.type_, sizeof(body.type_)));
+	buffers.push_back(boost::asio::buffer(&body.class_, sizeof(body.class_)));
+	buffers.push_back(boost::asio::buffer(&body.ttl_, sizeof(body.ttl_)));
+	buffers.push_back(boost::asio::buffer(&body.length_, sizeof(body.length_)));
+	buffers.push_back(boost::asio::buffer(&body.address_, sizeof(body.address_)));
+}
+
+
+void send_a_query(udp::socket& socket) {
+	deb(cout << "zaczynam wysyłać mdnsa\n";)
+	try {
+		/*
+		udp::resolver resolver(io_service);
+		udp::resolver::query query(udp::v4(), argv[1], "daytime");
+		udp::endpoint receiver_endpoint = *resolver.resolve(query);
+		*/
+
+		udp::endpoint receiver_endpoint;
+		receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
+		receiver_endpoint.port(MDNS_PORT_NUM);
+
+		uint16_t header[] = {0, 0, htons(1), 0, 0, 0};
+		std::vector<boost::asio::const_buffer> buffers;
+		buffers.push_back(boost::asio::buffer(header));
+
+		std::ostringstream oss;
+		string fqdn[] = {"_opoznienie", "_udp", "_local"};
+		for (auto component : fqdn) {
+			uint8_t len = static_cast<uint8_t>(component.length());
+			cout << component << " " << component.length() << " " << len << "\n";
+			
+			oss << len << component;
+			
+			//char tak[] = {9, 5, 6, 7};
+			//buffers.push_back(boost::asio::buffer(tak));
+			//~ char len_text[component.length() + 1];
+			//string len_text;
+			//~ snprintf(len_text, component.length() + 1, "%c%s", len, &component);
+			//buffers.push_back(boost::asio::buffer(&len, sizeof(len)));
+			//cout << "wstawiam " << oss.str() << "\n";
+			
+		}
+		buffers.push_back(boost::asio::buffer(oss.str()));
+		uint8_t null_byte = 0;
+		buffers.push_back(boost::asio::buffer(&null_byte, 1));
+
+		uint16_t flags[] = {htons(1), htons(1)};
+		buffers.push_back(boost::asio::buffer(flags));
+		
+
+		socket.send_to(buffers, receiver_endpoint);
+
+
+		deb(cout << "wysłano mdns\n";)
+	}
+	catch (std::exception& e) {
+		std::cerr << e.what() << std::endl;
+	}
+	
+}
+
+int main(int argc, char *argv[]) {
 	
 	// parsing arguments
 	namespace po = boost::program_options;
@@ -249,15 +318,62 @@ int main (int argc, char *argv[]) {
 	// creating thread for UDP delay server
 	std::thread udp_thread(udp_delay_server);
 
+	
 	try {
 		boost::asio::io_service io_service;
+
+		// creating tcp server for ui interface
 		tcp_server server(io_service);
-		io_service.run();
+
+		udp::socket socket(io_service);
+		socket.open(udp::v4());
+		
+		
+
+		send_a_query(socket);
+
+		//io_service.run();
+
+		
 	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
 
-	udp_thread.join();
+	udp_thread.detach();
+
+	// server for mDNS queries
+	/*
+	try {
+		
+		boost::asio::io_service io_service;
+
+		udp::socket socket(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM));
+
+		for (;;) {
+			boost::array<uint64_t, 1> recv_buf;
+			udp::endpoint remote_endpoint;
+			boost::system::error_code error;
+			socket.receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
+
+			if (error && error != boost::asio::error::message_size)
+				throw boost::system::system_error(error);
+				
+			// creating message
+			boost::array<uint64_t, 2> message;
+			message[0] = recv_buf[0];
+			message[1] = htobe64(time);
+
+			boost::system::error_code ignored_error;
+			socket.send_to(boost::asio::buffer(message),
+				remote_endpoint, 0, ignored_error);
+		}
+	} catch (std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		return 1;
+	} */
+
+	
 
 	return 0;
 }
