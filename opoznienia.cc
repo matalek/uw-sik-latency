@@ -12,7 +12,7 @@
 #include <sstream>
 #include <stdio.h>
 
-#include "err.h"
+
 
 #include "boost/program_options.hpp"
 #include <boost/asio.hpp>
@@ -20,6 +20,11 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
+#include "err.h"
+#include "mdns_server.h"
+#include "mdns_client.h"
+#include "shared.h"
 
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
@@ -230,10 +235,7 @@ void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffer
 	buffers.push_back(boost::asio::buffer(&body.address_, sizeof(body.address_)));
 }
 
-enum dns_type {
-	A = 1,
-	PTR = 12
-};
+
 
 void send_query(udp::socket& socket, dns_type type, vector<string> fqdn) {
 	deb(cout << "zaczynam wysyłać mdnsa\n";)
@@ -274,33 +276,33 @@ void send_query(udp::socket& socket, dns_type type, vector<string> fqdn) {
 }
 
 // server for mDNS queries
-void mdns_server(boost::asio::io_service& io_service) {
-	try {
-		udp::socket socket(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM));
-		
-		for (;;) {
-			boost::array<uint64_t, 1> recv_buf;
-			udp::endpoint remote_endpoint;
-			boost::system::error_code error;
-			socket.receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
-
-			if (error && error != boost::asio::error::message_size)
-				throw boost::system::system_error(error);
-
-			deb(cout << "odebrałem zapytanie mDNS\n";)
-				
-			// creating message
+//~ void mdns_server(boost::asio::io_service& io_service) {
+	//~ try {
+		//~ udp::socket socket(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM));
+		//~ 
+		//~ for (;;) {
+			//~ boost::array<uint64_t, 1> recv_buf;
+			//~ udp::endpoint remote_endpoint;
+			//~ boost::system::error_code error;
+			//~ socket.receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
+//~ 
+			//~ if (error && error != boost::asio::error::message_size)
+				//~ throw boost::system::system_error(error);
+//~ 
+			//~ deb(cout << "odebrałem zapytanie mDNS\n";)
+				//~ 
+			//~ // creating message
 			//~ boost::array<uint64_t, 2> message;
 //~ 
 			//~ boost::system::error_code ignored_error;
 			//~ socket.send_to(boost::asio::buffer(message),
 				//~ remote_endpoint, 0, ignored_error);
-		}
-	} catch (std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-	} 
-}
+		//~ }
+	//~ } catch (std::exception& e)
+	//~ {
+		//~ std::cerr << e.what() << std::endl;
+	//~ } 
+//~ }
 
 
 int main(int argc, char *argv[]) {
@@ -346,7 +348,6 @@ int main(int argc, char *argv[]) {
 		// creating tcp server for ui interface
 		tcp_server server(io_service);
 
-
 		// only temporary here
 
 		//~ udp::endpoint endpoint;
@@ -360,9 +361,12 @@ int main(int argc, char *argv[]) {
 		socket.open(udp::v4());
 		
 		// creating thread for mDNS sever
-		std::thread mdns_server_thread(mdns_server, ref(io_service));
+		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
+
+		mdns_server mdns_server_(io_service);
+		mdns_client mdns_client_(io_service);
 		
-		send_query(socket, dns_type::PTR, {"_opoznienie", "_udp", "_local"});
+		mdns_client_.send_query(dns_type::PTR, {"_opoznienie", "_udp", "_local"});
 
 		io_service.run();
 
