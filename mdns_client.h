@@ -53,11 +53,11 @@ class mdns_client
 				std::vector<boost::asio::const_buffer> buffers;
 				buffers.push_back(boost::asio::buffer(header));
 
-				for (int i = 0; i < header.size(); i++)
+				for (size_t i = 0; i < header.size(); i++)
 					oss << header[i];
 
 				// FQDN specified by a list of component strings
-				for (int i = 0; i < fqdn.size(); i++) {
+				for (size_t i = 0; i < fqdn.size(); i++) {
 					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
 					oss << len << fqdn[i];
 				}
