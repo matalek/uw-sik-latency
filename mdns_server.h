@@ -51,6 +51,14 @@ class mdns_server
 		  std::size_t /*bytes_transferred*/) {
 			if (!error || error == boost::asio::error::message_size){
 				deb(cout << "odebrałem zapytanie mDNS\n";)
+
+				std::istringstream iss(recv_buffer_);
+				mdns_header mdns_header_ = read_mdns_header(iss);
+
+				vector<string> fqdn = read_fqdn(iss);
+				//~ iss >> tak;
+				//~ deb(cout << iss.str() << " " << tak  << "\n";)
+
 				
 				/*
 				boost::shared_ptr<std::string> message(new std::string(make_daytime_string()));
@@ -72,5 +80,6 @@ class mdns_server
 
 		udp::socket socket_;
 		udp::endpoint remote_endpoint_;
-		boost::array<char, BUFFER_SIZE> recv_buffer_;
+		//~ boost::array<char, BUFFER_SIZE> recv_buffer_;
+		char recv_buffer_[BUFFER_SIZE];
 };
