@@ -55,15 +55,28 @@ class mdns_server
 		void handle_receive(const boost::system::error_code& error,
 		  std::size_t /*bytes_transferred*/) {
 			if (!error || error == boost::asio::error::message_size){
-				deb(cout << "odebrałem zapytanie mDNS\n";)
+				deb(cout << "odebrałem zapytanie mDNS" << static_cast<int>(recv_buffer_[0])  << "aaa\n";)
 
+				//~ recv_buffer_[0]=0;
+				//~ recv_buffer_[1]=1;
+				//~ recv_buffer_[2]=111; 
+				//~ 
 				//~ std::istringstream iss(recv_buffer_);
-				//~ mdns_header mdns_header_ = read_mdns_header(iss);
 
-				//~ vector<string> fqdn = read_fqdn(iss);
+				//~ char c;
+				//~ int a;
+				//~ for (int i = 0; i < 10; i++) {
+					//~ iss.get(c);
+					//~ cout << "k" << static_cast<int>(c) << "k\n";
+				//~ }
+
+				size_t end;
+				mdns_header mdns_header_ = read_mdns_header(recv_buffer_, end);
+				cout << "a" << static_cast<int>(mdns_header_.id) <<"c\n";
+				cout << "a" << static_cast<int>(mdns_header_.qdcount) <<"c\n";
+				vector<string> fqdn = read_fqdn(recv_buffer_, end);
 				//~ iss >> tak;
-				//~ deb(cout << iss.str() << " " << tak  << "\n";)
-
+				deb(cout << fqdn[0] << " " << fqdn[1] << "\n";)
 				
 				/*
 				boost::shared_ptr<std::string> message(new std::string(make_daytime_string()));
