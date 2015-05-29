@@ -3,7 +3,6 @@
 #include <thread>
 #include <chrono>
 #include <functional>
-#include <atomic>
 #include <ctime>
 #include <string>
 #include <cstdint>

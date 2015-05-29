@@ -3,7 +3,6 @@
 #include <thread>
 #include <chrono>
 #include <functional>
-#include <atomic>
 #include <ctime>
 #include <string>
 #include <cstdint>
@@ -82,7 +81,7 @@ class mdns_client
 					
 				//~ socket.send_to(buffers, receiver_endpoint);
 
-				deb(cout << "wysłano mdns\n";)
+				deb(cout << "wysłano mdns" << oss.str() << "\n";)
 			}
 			catch (std::exception& e) {
 				std::cerr << e.what() << std::endl;
@@ -119,6 +118,7 @@ class mdns_client
 		  const boost::system::error_code& /*error*/,
 		  std::size_t /*bytes_transferred*/)
 		{
+			deb(cout << "wysłano!!!\n";)
 		}
 
 		udp::socket socket_;

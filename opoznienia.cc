@@ -3,7 +3,6 @@
 #include <thread>
 #include <chrono>
 #include <functional>
-#include <atomic>
 #include <ctime>
 #include <string>
 #include <cstdint>
@@ -165,8 +164,13 @@ int main(int argc, char *argv[]) {
 
 		mdns_server mdns_server_(io_service);
 		mdns_client mdns_client_(io_service);
-		
-		mdns_client_.send_query(dns_type::PTR, {"_opoznienie", "_udp", "_local"});
+
+
+		vector <string> fqdn(3);
+		fqdn[0] = "_opoznienia";
+		fqdn[1] = "_udp";
+		fqdn[2] = "_local";
+		mdns_client_.send_query(dns_type::PTR, fqdn);
 
 		io_service.run();
 
