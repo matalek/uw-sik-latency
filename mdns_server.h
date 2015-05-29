@@ -32,13 +32,19 @@ class mdns_server
 	public:
 		mdns_server(boost::asio::io_service& io_service)
 		: socket_(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+
 			boost::system::error_code ec;
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
+			
+			boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
+			socket_.set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
+
 			start_receive();
 		}
 
 	private:
 		void start_receive() {
+			deb(cout << "czekam...\n";)
 			socket_.async_receive_from(
 				boost::asio::buffer(recv_buffer_), remote_endpoint_,
 				boost::bind(&mdns_server::handle_receive, this,
@@ -51,10 +57,10 @@ class mdns_server
 			if (!error || error == boost::asio::error::message_size){
 				deb(cout << "odebrałem zapytanie mDNS\n";)
 
-				std::istringstream iss(recv_buffer_);
-				mdns_header mdns_header_ = read_mdns_header(iss);
+				//~ std::istringstream iss(recv_buffer_);
+				//~ mdns_header mdns_header_ = read_mdns_header(iss);
 
-				vector<string> fqdn = read_fqdn(iss);
+				//~ vector<string> fqdn = read_fqdn(iss);
 				//~ iss >> tak;
 				//~ deb(cout << iss.str() << " " << tak  << "\n";)
 
