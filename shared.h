@@ -9,6 +9,7 @@ using namespace std;
 
 #define MDNS_PORT_NUM 5353
 #define BUFFER_SIZE   1000
+#define MAX_LINES 24
 
 #define deb(a) a
 

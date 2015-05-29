@@ -25,20 +25,11 @@
 #include "mdns_server.h"
 #include "mdns_client.h"
 #include "shared.h"
+#include "ui.h"
 
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 
-
-
-#define deb(a) a
-
-#define BUFFER_SIZE   1000
-#define QUEUE_LENGTH     5
-
-#define MAX_LINES 24
-
-#define MDNS_PORT_NUM 5353
 
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
@@ -96,128 +87,7 @@ std::string make_daytime_string()
   return ctime(&now);
 }
 
-class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
-	public:
-		typedef boost::shared_ptr<tcp_connection> pointer;
 
-		static pointer create(boost::asio::io_service& io_service){
-			return pointer(new tcp_connection(io_service));
-		}
-
-		tcp::socket& socket() {
-			return socket_;
-		}
-
-		void start() {
-			// will echo, will suppress go ahead
-			uint8_t message_[6] = {255, 251, 1, 255, 251, 3};
-
-			lines.clear();
-			for (int i = 0; i < 30; i++) {
-				std::ostringstream oss;
-				oss << "linia " << i;
-				cout << oss.str() << "\n";
-				lines.push_back(oss.str());
-			}
-			boost::asio::async_write(socket_, boost::asio::buffer(message_),
-				boost::bind(&tcp_connection::handle_write, shared_from_this(),
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred));
-		}
-
-		void write(char c) {
-			bool has_changed = false;
-			
-			switch(c) {
-				case 'a':
-					if (start_line < lines.size() - 1) {
-						start_line++;
-						has_changed = true;
-					}
-					break;
-				case 'q':
-					if (start_line > 0) {
-						start_line--;
-						has_changed = true;
-					}
-					break;
-			}
-
-			if (has_changed) {
-				message_ = "\033[2J\033[0;0H"; // clean console
-				unsigned int end = lines.size();
-				if (start_line + MAX_LINES < end)
-					end = start_line + MAX_LINES;
-				
-				for (unsigned int i = start_line; i < end; i++)
-					message_ += lines[i] + ((i != end - 1) ? "\n\r" : "");
-				
-				boost::asio::async_write(socket_, boost::asio::buffer(message_),
-					boost::bind(&tcp_connection::handle_write, shared_from_this(),
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred));
-			} else
-				read();
-		}
-
-		void read() {
-
-			boost::asio::async_read_until(socket_, response_, "",
-          boost::bind(&tcp_connection::handle_read, shared_from_this(),
-            boost::asio::placeholders::error));
-
-		}
-
-	private:
-		tcp_connection(boost::asio::io_service& io_service)
-		: socket_(io_service) { }
-
-		void handle_write(const boost::system::error_code& /*error*/,
-		  size_t /*bytes_transferred*/) { read(); }
-
-		void handle_read(const boost::system::error_code& /*error*/) {
-			std::istream response_stream(&response_);
-			char c;
-			response_stream >> c;
-			//cout << &response_;
-			  write(c); }
-
-		tcp::socket socket_;
-		std::string message_;
-		boost::asio::streambuf response_;
-
-		vector<string> lines;
-		unsigned int start_line = 0;
-};
-
-class tcp_server {
-	public:
-		tcp_server(boost::asio::io_service& io_service)
-		: acceptor_(io_service, tcp::endpoint(tcp::v4(), ui_port_num)) {
-			start_accept();
-		}
-
-	private:
-		void start_accept() {
-			tcp_connection::pointer new_connection =
-			  tcp_connection::create(acceptor_.get_io_service());
-
-			acceptor_.async_accept(new_connection->socket(),
-				boost::bind(&tcp_server::handle_accept, this, new_connection,
-				boost::asio::placeholders::error));
-		}
-
-		void handle_accept(tcp_connection::pointer new_connection,
-		  const boost::system::error_code& error) {
-
-			if (!error)
-				new_connection->start();
-
-			start_accept();
-		}
-
-		tcp::acceptor acceptor_;
-};
 
 struct mdns_body {
 	uint16_t type_;
@@ -276,7 +146,7 @@ int main(int argc, char *argv[]) {
 		boost::asio::io_service io_service;
 
 		// creating tcp server for ui interface
-		tcp_server server(io_service);
+		tcp_server server(io_service, ui_port_num);
 
 		// only temporary here
 
