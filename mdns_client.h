@@ -47,12 +47,12 @@ class mdns_client
 				std::ostringstream oss;
 				
 				// ID, Flags (0 for query), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
-				vector<uint16_t> header = {0, 0, htons(1), 0, 0, 0};
+				vector<unsigned short int> header = {0, 0, htons(1), 0, 0, 0};
 				std::vector<boost::asio::const_buffer> buffers;
 				buffers.push_back(boost::asio::buffer(header));
-
-				for (size_t i = 0; i < header.size(); i++)
-					oss << header[i];
+				
+				//~ for (size_t i = 0; i < header.size(); i++)
+					//~ oss << header[i];
 
 				// FQDN specified by a list of component strings
 				for (size_t i = 0; i < fqdn.size(); i++) {
@@ -64,21 +64,24 @@ class mdns_client
 				// terminating FQDN with null byte
 				uint8_t null_byte = 0;
 				buffers.push_back(boost::asio::buffer(&null_byte, 1));
-				oss << null_byte;
+				//~ oss << null_byte;
 				
 				// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
 				uint16_t flags[] = {htons(type), htons(1)};
 				buffers.push_back(boost::asio::buffer(flags));
-				oss << htons(type) << htons(1);
+				//~ oss << htons(type) << htons(1);
 				
-				boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
 
-				socket_.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
-				  boost::bind(&mdns_client::handle_send, this, message,
+				socket_.async_send_to(
+				buffers,
+				//~ boost::asio::buffer(*message),
+				 receiver_endpoint,
+				  boost::bind(&mdns_client::handle_send, this, //message,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
 
-				deb(cout << "wysłano mdns" << oss.str() << "\n";)
+				//~ deb(cout << "wysłano mdns" << oss.str() << "\n";)
 			}
 			catch (std::exception& e) {
 				std::cerr << e.what() << std::endl;
@@ -88,7 +91,7 @@ class mdns_client
 	private:
 
 
-		void handle_send(boost::shared_ptr<std::string> /*message*/,
+		void handle_send(//boost::shared_ptr<std::string> /*message*/,
 		  const boost::system::error_code& /*error*/,
 		  std::size_t /*bytes_transferred*/)
 		{
