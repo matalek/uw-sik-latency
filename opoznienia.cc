@@ -162,8 +162,9 @@ int main(int argc, char *argv[]) {
 		// creating thread for mDNS sever
 		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
 
-		mdns_server mdns_server_(io_service);
 		mdns_client mdns_client_(io_service);
+		mdns_server mdns_server_(io_service, mdns_client_);
+		
 
 
 		vector <string> fqdn(3);

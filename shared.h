@@ -15,6 +15,8 @@ using namespace std;
 
 #define deb(a) a
 
+vector<string> my_name;
+
 enum dns_type {
 	A = 1,
 	PTR = 12

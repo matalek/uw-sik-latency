@@ -19,6 +19,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include "shared.h"
+#include "mdns_client.h"
 
 using boost::asio::ip::udp;
 
@@ -26,13 +27,12 @@ using boost::asio::ip::udp;
 
 using namespace std;
 
-
 class mdns_server
 {
 	public:
-		mdns_server(boost::asio::io_service& io_service)
+		mdns_server(boost::asio::io_service& io_service, mdns_client& mdns_client_)
 		: socket_(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
-
+			
 			boost::system::error_code ec;
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
 			
@@ -61,6 +61,17 @@ class mdns_server
 				mdns_header mdns_header_ = read_mdns_header(recv_buffer_, end);
 
 				vector<string> fqdn = read_fqdn(recv_buffer_, end);
+
+				// at first: not compressed
+
+				// answering A type query
+				if (mdns_header_.flags == 0) {
+					if (fqdn == my_name) {
+						// sending response via multicast
+						mdns_client_.send_response(dns_type::A);
+						
+					}
+				}
 				
 				/*
 				boost::shared_ptr<std::string> message(new std::string(make_daytime_string()));
@@ -84,4 +95,5 @@ class mdns_server
 		udp::endpoint remote_endpoint_;
 		//~ boost::array<char, BUFFER_SIZE> recv_buffer_;
 		char recv_buffer_[BUFFER_SIZE];
+		mdns_client mdns_client_;
 };
