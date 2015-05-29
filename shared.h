@@ -29,7 +29,7 @@ struct mdns_header {
 	uint16_t arcount;
 };
 
-mdns_header read_mdns_header(char buffer[], size_t& end) { //std::istringstream& iss) {
+mdns_header read_mdns_header(char buffer[], size_t& end) {
 	mdns_header res;
 
 	uint16_t val;
@@ -48,47 +48,16 @@ mdns_header read_mdns_header(char buffer[], size_t& end) { //std::istringstream&
 	res.arcount = ntohs(val);
 
 	end = 12;
-
-	//~ memcpy(res.flags, buffer + 2, 2);
-	/*
-	uint16_t val;
-	
-	
-	iss.get((char *)&(val), 2);
-	if (val != 0)
-		(std::cout << "TAK!!!\n");
-	res.id = val;
-	iss.get((char *)&(val), 2);
-	if (val != 0)
-		(std::cout << "TAK!!!\n");
-	res.flags = val;
-	iss.get((char *)&(val), 2);
-	if (val != 0)
-		(std::cout << "TAK!!!\n");
-	res.qdcount = val;
-	iss.get((char *)&(val), 2);
-	if (val != 0)
-		(std::cout << "TAK!!!\n");
-	res.ancount = val;
-	iss.get((char *)&(val), 2);
-	if (val != 0)
-		(std::cout << "TAK!!!\n");
-	res.nscount = val;
-	iss.get((char *)&(val), 2);
-	if (val != 0)
-		(std::cout << "TAK!!!\n");
-	res.arcount = val;
-	*/
 	return res;
 }
 
-vector<string> read_fqdn(char buffer[], size_t& start) { //std::istringstream& iss) {
+vector<string> read_fqdn(char buffer[], size_t& start) {
 	vector<string> res;
-	//~ size_t start = end;
+
 	while (true) {
 		uint8_t len;
 		memcpy((char *)&len, buffer + start, 1);
-		//~ deb(std::cout << "len" << static_cast<int>(len) << "a\n";)
+
 		if (!len)
 			break;
 		char name[len + 1];
@@ -96,7 +65,7 @@ vector<string> read_fqdn(char buffer[], size_t& start) { //std::istringstream& i
 		name[len] = 0;
 		start += len + 1;
 		res.push_back(name);
-		deb(std::cout << "imie" << name << "a\n";)
+		deb(std::cout << "imie: " << name << "\n";)
 	}
 	start++;
 	return res;
