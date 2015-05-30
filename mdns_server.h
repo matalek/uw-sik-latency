@@ -28,6 +28,8 @@ using boost::asio::ip::udp;
 
 using namespace std;
 
+mdns_client* mdns_client_;
+
 class mdns_server
 {
 	public:
@@ -81,6 +83,20 @@ class mdns_server
 							send_response(dns_type::PTR, service_);
 						}
 					}
+				} else if (mdns_header_.flags == RESPONSE_FLAG) {
+					// handling response to query
+					if (type_ == dns_type::A) {
+						if (fqdn[0] == my_name && (service_ = which_my_service(fqdn, 1)) != NONE ) {
+							send_response(dns_type::A, service_);
+						}
+					} else if (type_ == dns_type::PTR) {
+						// sending query for IP
+						handle_ptr_response(fqdn, end);
+						//~ if ((service_ = which_my_service(fqdn, 0)) != NONE ) {
+							//~ send_response(dns_type::PTR, service_);
+						//~ }
+					}
+
 				}
 				
 				/*
@@ -165,6 +181,11 @@ class mdns_server
 			catch (std::exception& e) {
 				std::cerr << e.what() << std::endl;
 			}
+		}
+
+		void handle_ptr_response(vector<string> fqdn, size_t start) {
+			// nie wiem do końca, póki co interesuje mnie tylko nazwa
+			mdns_client_->send_query(dns_type::A, fqdn);
 		}
 
 		void handle_send(//boost::shared_ptr<std::string> /*message*/,

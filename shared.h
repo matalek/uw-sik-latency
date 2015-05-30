@@ -49,6 +49,8 @@ string my_name;
 uint32_t my_address; // BE order
 string my_address_str;
 
+
+
 enum dns_type {
 	A = 1,
 	PTR = 12
@@ -68,6 +70,7 @@ struct mdns_header {
 	uint16_t nscount;
 	uint16_t arcount;
 };
+
 
 mdns_header read_mdns_header(char buffer[], size_t& end) {
 	mdns_header res;
@@ -90,6 +93,8 @@ mdns_header read_mdns_header(char buffer[], size_t& end) {
 	end = 12;
 	return res;
 }
+
+
 
 vector<string> read_fqdn(char buffer[], uint16_t& type_, uint16_t& class_, size_t& start) {
 	vector<string> res;

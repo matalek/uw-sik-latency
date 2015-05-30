@@ -97,6 +97,8 @@ void set_name() {
 	my_name = hostname;
 }
 
+
+
 int main(int argc, char *argv[]) {
 	
 	// parsing arguments
@@ -136,6 +138,7 @@ int main(int argc, char *argv[]) {
 
 	set_name();
 
+	mdns_server* mdns_server_;
 	
 	try {
 		boost::asio::io_service io_service;
@@ -158,17 +161,15 @@ int main(int argc, char *argv[]) {
 		// creating thread for mDNS sever
 		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
 
-		mdns_client mdns_client_(io_service);
-		mdns_server mdns_server_(io_service);
+		mdns_client_ = new mdns_client(io_service);
+		mdns_server_ = new mdns_server(io_service);
 	
-		
-		
 
 		vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
 		//~ fqdn[0] = "_opoznienia";
 		//~ fqdn[1] = "_udp";
 		//~ fqdn[2] = "_local";
-		mdns_client_.send_query(dns_type::PTR, fqdn);
+		mdns_client_->send_query(dns_type::PTR, fqdn);
 
 		io_service.run();
 
@@ -179,6 +180,10 @@ int main(int argc, char *argv[]) {
 
 	udp_delay_server_thread.join(); // to change
 	//~ mdns_server_thread.join(); // to change
+
+	free(mdns_server_);
+	free(mdns_client_);
+	
 
 	return 0;
 }
