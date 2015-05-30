@@ -16,6 +16,7 @@ using namespace std;
 #define deb(a) a
 
 vector<string> my_name;
+string my_address;
 
 enum dns_type {
 	A = 1,

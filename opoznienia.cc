@@ -11,14 +11,22 @@
 #include <sstream>
 #include <stdio.h>
 
-
-
 #include "boost/program_options.hpp"
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
+// to get IP address
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 
 #include "err.h"
 #include "mdns_server.h"
@@ -86,6 +94,21 @@ std::string make_daytime_string()
   return ctime(&now);
 }
 
+void get_address() {
+	int fd;
+	struct ifreq ifr;
+
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	ifr.ifr_addr.sa_family = AF_INET; //IPv4 IP address
+	// we assume, that local network is connected to eth1 interface
+	strncpy(ifr.ifr_name, "eth1", IFNAMSIZ-1);
+
+	ioctl(fd, SIOCGIFADDR, &ifr);
+
+	close(fd);
+	
+	my_address = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
+}
 
 
 struct mdns_body {
@@ -138,7 +161,8 @@ int main(int argc, char *argv[]) {
 	// creating thread for UDP delay server
 	std::thread udp_delay_server_thread(udp_delay_server);
 
-	
+	get_address();
+	deb(cout << "Adres ip: " << my_address << "\n";)
 
 	
 	try {
