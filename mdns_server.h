@@ -136,18 +136,14 @@ class mdns_server
 					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
 					oss << len << fqdn[i];
 				}
-				//~ oss << static_cast<uint8_t>(0);
+
 				boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				buffers.push_back(boost::asio::buffer(*message));
-				//~ deb(cout << "buf " << buffers->size() << "\n";)
 				deb(cout << "___" << oss.str() << "\n";)
 
 				// terminating FQDN with null byte
-				uint8_t null_byte[] = {0};
-				//~ deb(cout << static_cast<int>(null_byte[0]) << "\n";)
-				//~ buffers->push_back(boost::asio::buffer((char *)&null_byte, 1));
-				boost::shared_ptr<vector<uint8_t> > message2(new vector<uint8_t>{0});
-				buffers.push_back(boost::asio::buffer(*message2));
+				auto null_byte(new vector<uint8_t>{0});
+				buffers.push_back(boost::asio::buffer(*null_byte));
 				
 				// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
 				//~ uint16_t flags[] = {htons(type_), htons(1)};
