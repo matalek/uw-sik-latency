@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <sstream>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "boost/program_options.hpp"
 #include <boost/asio.hpp>
@@ -19,7 +20,6 @@
 #include <boost/enable_shared_from_this.hpp>
 
 // to get IP address
-#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -86,6 +86,16 @@ void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffer
 	buffers.push_back(boost::asio::buffer(&body.address_, sizeof(body.address_)));
 }
 
+void set_name() {
+	// dodać obsługę błędu
+	char hostname[HOSTNAME_SIZE];
+	gethostname(hostname, HOSTNAME_SIZE);
+
+	deb(printf("hostname: %s\n", hostname);)
+	my_name = { hostname, "_opoznienia", "_udp", "_local"};
+	deb(cout << "---" << my_name[0] << "\n";)
+}
+
 int main(int argc, char *argv[]) {
 	
 	// parsing arguments
@@ -123,6 +133,8 @@ int main(int argc, char *argv[]) {
 	get_address();
 	deb(cout << "Adres ip: " << my_address << "\n";)
 
+	set_name();
+
 	
 	try {
 		boost::asio::io_service io_service;
@@ -147,8 +159,9 @@ int main(int argc, char *argv[]) {
 
 		mdns_client mdns_client_(io_service);
 		mdns_server mdns_server_(io_service);
+	
 		
-		my_name = { "_opoznienia", "_udp", "_local"};
+		
 
 		vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
 		//~ fqdn[0] = "_opoznienia";

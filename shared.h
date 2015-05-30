@@ -19,6 +19,7 @@ bool ssh_service; // configured by -s option
 #define MDNS_PORT_NUM 5353
 #define BUFFER_SIZE   1000
 #define MAX_LINES 24
+#define HOSTNAME_SIZE 100
 
 #define RESPONSE_FLAG 0x8400
 
