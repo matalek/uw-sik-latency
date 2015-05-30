@@ -50,6 +50,7 @@ string my_name;
 uint32_t my_address; // BE order
 string my_address_str;
 
+boost::asio::io_service* io_service;
 
 
 enum dns_type {

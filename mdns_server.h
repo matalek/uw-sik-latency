@@ -35,8 +35,8 @@ map<uint32_t, computer> computers; // identify by IPv4 address
 class mdns_server
 {
 	public:
-		mdns_server(boost::asio::io_service& io_service)
-		: socket_(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+		mdns_server() //boost::asio::io_service& io_service)
+		: socket_(*io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
 			
 			boost::system::error_code ec;
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
@@ -211,4 +211,5 @@ class mdns_server
 		udp::socket socket_;
 		udp::endpoint remote_endpoint_;
 		char recv_buffer_[BUFFER_SIZE];
+		
 };

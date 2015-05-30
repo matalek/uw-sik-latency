@@ -141,10 +141,11 @@ int main(int argc, char *argv[]) {
 	mdns_server* mdns_server_;
 	
 	try {
-		boost::asio::io_service io_service;
+		//~ boost::asio::io_service io_service;
+		io_service = new boost::asio::io_service();
 
 		// creating tcp server for ui interface
-		tcp_server server(io_service, ui_port_num);
+		tcp_server server(ui_port_num);
 
 		// only temporary here
 
@@ -152,17 +153,17 @@ int main(int argc, char *argv[]) {
 		//endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
 		//~ endpoint.port(5353);
 
-		udp::socket socket(io_service);
+		//~ udp::socket socket(io_service);
 
 		//udp::socket socket(io_service, udp::endpoint(udp::v4(), 13));
 		//~ udp::socket socket(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM));
-		socket.open(udp::v4());
+		//~ socket.open(udp::v4());
 		
 		// creating thread for mDNS sever
 		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
 
-		mdns_client_ = new mdns_client(io_service);
-		mdns_server_ = new mdns_server(io_service);
+		mdns_client_ = new mdns_client();
+		mdns_server_ = new mdns_server();
 	
 
 		vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
@@ -171,7 +172,7 @@ int main(int argc, char *argv[]) {
 		//~ fqdn[2] = "_local";
 		mdns_client_->send_query(dns_type::PTR, fqdn);
 
-		io_service.run();
+		io_service->run();
 
 		
 	} catch (std::exception& e) {
@@ -183,6 +184,7 @@ int main(int argc, char *argv[]) {
 
 	free(mdns_server_);
 	free(mdns_client_);
+	free(io_service);
 	
 
 	return 0;

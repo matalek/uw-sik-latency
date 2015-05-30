@@ -33,8 +33,8 @@ class mdns_client
 {
 	public:
 
-		mdns_client(boost::asio::io_service& io_service)
-		: socket_(io_service) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+		mdns_client() //boost::asio::io_service& io_service)
+		: socket_(*io_service) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
 			boost::system::error_code ec;
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
 			socket_.open(udp::v4());

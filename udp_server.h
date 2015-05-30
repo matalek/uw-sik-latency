@@ -23,9 +23,9 @@
 void udp_delay_server() {
 	try {
 		
-		boost::asio::io_service io_service;
+		boost::asio::io_service my_io_service;
 
-		udp::socket socket(io_service, udp::endpoint(udp::v4(), udp_port_num));
+		udp::socket socket(my_io_service, udp::endpoint(udp::v4(), udp_port_num));
 
 		for (;;) {
 			boost::array<uint64_t, 1> recv_buf;

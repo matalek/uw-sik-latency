@@ -30,8 +30,9 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 	public:
 		typedef boost::shared_ptr<tcp_connection> pointer;
 
-		static pointer create(boost::asio::io_service& io_service){
-			return pointer(new tcp_connection(io_service));
+		static pointer create() {
+		//boost::asio::io_service& io_service){
+			return pointer(new tcp_connection());//*io_service));
 		}
 
 		tcp::socket& socket() {
@@ -99,8 +100,9 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 		}
 
 	private:
-		tcp_connection(boost::asio::io_service& io_service)
-		: socket_(io_service) {
+		tcp_connection()
+		//boost::asio::io_service& io_service)
+		: socket_(*io_service) {
 			start_line = 0;
 		}
 
@@ -124,15 +126,16 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 
 class tcp_server {
 	public:
-		tcp_server(boost::asio::io_service& io_service, uint16_t ui_port_num)
-		: acceptor_(io_service, tcp::endpoint(tcp::v4(), ui_port_num)) {
+		tcp_server(//boost::asio::io_service& io_service,
+		uint16_t ui_port_num)
+		: acceptor_(*io_service, tcp::endpoint(tcp::v4(), ui_port_num)) {
 			start_accept();
 		}
 
 	private:
 		void start_accept() {
 			tcp_connection::pointer new_connection =
-			  tcp_connection::create(acceptor_.get_io_service());
+			  tcp_connection::create();//acceptor_.get_io_service());
 
 			acceptor_.async_accept(new_connection->socket(),
 				boost::bind(&tcp_server::handle_accept, this, new_connection,
