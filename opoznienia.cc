@@ -60,7 +60,7 @@ void get_address() {
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	ifr.ifr_addr.sa_family = AF_INET; //IPv4 IP address
 	// we assume, that local network is connected to eth1 interface
-	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+	strncpy(ifr.ifr_name, "eth1", IFNAMSIZ-1);
 
 	ioctl(fd, SIOCGIFADDR, &ifr);
 

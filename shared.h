@@ -75,7 +75,7 @@ struct mdns_header {
 
 struct ipv4_address {
 	uint32_t ttl;
-	uint32_t address;
+	uint32_t address; // host order
 };
 
 mdns_header read_mdns_header(char buffer[], size_t& end) {
@@ -148,10 +148,10 @@ ipv4_address read_ipv4_address(char buffer[], size_t& end) {
 	ipv4_address res;
 	uint32_t val;
 	
-	memcpy((char *)&val, buffer, 4);
+	memcpy((char *)&val, buffer + end, 4);
 	res.ttl = ntohl(val);
 	// we ommit length - in IPv4 it is known 
-	memcpy((char *)&val, buffer + 6, 4);
+	memcpy((char *)&val, buffer + end + 6, 4);
 	res.address = ntohl(val);
 
 	end += 10;
