@@ -34,6 +34,7 @@
 #include "shared.h"
 #include "ui.h"
 #include "udp_server.h"
+#include "measurement_server.h"
 
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
@@ -164,7 +165,8 @@ int main(int argc, char *argv[]) {
 
 		mdns_client_ = new mdns_client();
 		mdns_server_ = new mdns_server();
-	
+
+		measurement_server measurement_server{};
 
 		vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
 		//~ fqdn[0] = "_opoznienia";
@@ -172,6 +174,8 @@ int main(int argc, char *argv[]) {
 		//~ fqdn[2] = "_local";
 		mdns_client_->send_query(dns_type::PTR, fqdn);
 
+		
+		
 		io_service->run();
 
 		

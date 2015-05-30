@@ -22,7 +22,7 @@ class computer {
 			remote_udp_endpoint.port(udp_port_num);
 
 			// only temporary here
-			measure_udp();
+			//~ measure_udp();
 			
 		}
 
@@ -55,6 +55,10 @@ class computer {
 			if (icmp_times.size())
 				return icmp_sum / icmp_times.size();
 			return 0; 
+		}
+
+		string get_address_string() {
+			return boost::asio::ip::address_v4(address).to_string();
 		}
 
 	private:

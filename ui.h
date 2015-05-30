@@ -60,8 +60,7 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			lines.clear();
 			for (auto it = computers.begin(); it != computers.end(); it++) {
 				std::ostringstream oss;
-				// TO DO: ip address
-				oss << it->second->get_name() << " " << it->second->get_udp_average()
+				oss << it->second->get_address_string() << " " << it->second->get_udp_average()
 					<< " " << it->second->get_tcp_average()
 					<< " " << it->second->get_icmp_average();
 				lines.push_back(oss.str());
