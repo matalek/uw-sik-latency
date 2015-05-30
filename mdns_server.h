@@ -30,7 +30,7 @@ using namespace std;
 class mdns_server
 {
 	public:
-		mdns_server(boost::asio::io_service& io_service, mdns_client& mdns_client_)
+		mdns_server(boost::asio::io_service& io_service)
 		: socket_(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
 			
 			boost::system::error_code ec;
@@ -68,7 +68,7 @@ class mdns_server
 				if (mdns_header_.flags == 0) {
 					if (fqdn == my_name) {
 						// sending response via multicast
-						mdns_client_.send_response(dns_type::A);
+						send_response(dns_type::A);
 						
 					}
 				}
@@ -85,6 +85,60 @@ class mdns_server
 			}
 		}
 
+		void send_response(dns_type type) {
+			deb(cout << "zaczynam wysyłać odpowiedź na mdns\n";)
+			try {
+				/*
+				udp::endpoint receiver_endpoint;
+				receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
+				receiver_endpoint.port(MDNS_PORT_NUM);
+
+				//~ boost::shared_ptr<std::string> message(new std::string());
+
+				std::ostringstream oss;
+				
+				// ID, Flags (0 for query), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
+				vector<unsigned short int> header = {0, 0, htons(1), 0, 0, 0};
+				std::vector<boost::asio::const_buffer> buffers;
+				buffers.push_back(boost::asio::buffer(header));
+				
+				//~ for (size_t i = 0; i < header.size(); i++)
+					//~ oss << header[i];
+
+				// FQDN specified by a list of component strings
+				for (size_t i = 0; i < fqdn.size(); i++) {
+					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
+					oss << len << fqdn[i];
+				}
+				buffers.push_back(boost::asio::buffer(oss.str()));
+
+				// terminating FQDN with null byte
+				uint8_t null_byte = 0;
+				buffers.push_back(boost::asio::buffer(&null_byte, 1));
+				//~ oss << null_byte;
+				
+				// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
+				uint16_t flags[] = {htons(type), htons(1)};
+				buffers.push_back(boost::asio::buffer(flags));
+				//~ oss << htons(type) << htons(1);
+				
+				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
+
+				socket_.async_send_to(
+				buffers,
+				//~ boost::asio::buffer(*message),
+				 receiver_endpoint,
+				  boost::bind(&mdns_client::handle_send, this, //message,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred));
+				*/
+				deb(cout << "wysłano odpowiedź na mdns \n";)
+			}
+			catch (std::exception& e) {
+				std::cerr << e.what() << std::endl;
+			}
+		}
+
 		void handle_send(boost::shared_ptr<std::string> /*message*/,
 		  const boost::system::error_code& /*error*/,
 		  std::size_t /*bytes_transferred*/)
@@ -95,5 +149,4 @@ class mdns_server
 		udp::endpoint remote_endpoint_;
 		//~ boost::array<char, BUFFER_SIZE> recv_buffer_;
 		char recv_buffer_[BUFFER_SIZE];
-		mdns_client mdns_client_;
 };
