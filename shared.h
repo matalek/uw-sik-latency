@@ -20,10 +20,13 @@ bool ssh_service; // configured by -s option
 #define BUFFER_SIZE   1000
 #define MAX_LINES 24
 
+#define RESPONSE_FLAG 0x8400
+
 #define deb(a) a
 
 vector<string> my_name;
-string my_address;
+uint32_t my_address; // BE order
+string my_address_str;
 
 enum dns_type {
 	A = 1,

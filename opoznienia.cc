@@ -60,13 +60,13 @@ void get_address() {
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	ifr.ifr_addr.sa_family = AF_INET; //IPv4 IP address
 	// we assume, that local network is connected to eth1 interface
-	strncpy(ifr.ifr_name, "eth1", IFNAMSIZ-1);
+	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
 
 	ioctl(fd, SIOCGIFADDR, &ifr);
 
 	close(fd);
-	
-	my_address = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
+	my_address = ((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr);
+	my_address_str = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr); // for debugging
 }
 
 
@@ -148,13 +148,13 @@ int main(int argc, char *argv[]) {
 		mdns_client mdns_client_(io_service);
 		mdns_server mdns_server_(io_service);
 		
+		my_name = { "_opoznienia", "_udp", "_local"};
 
-
-		vector <string> fqdn(3);
-		fqdn[0] = "_opoznienia";
-		fqdn[1] = "_udp";
-		fqdn[2] = "_local";
-		mdns_client_.send_query(dns_type::PTR, fqdn);
+		vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
+		//~ fqdn[0] = "_opoznienia";
+		//~ fqdn[1] = "_udp";
+		//~ fqdn[2] = "_local";
+		mdns_client_.send_query(dns_type::A, fqdn);
 
 		io_service.run();
 
