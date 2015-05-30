@@ -30,7 +30,7 @@ using boost::asio::ip::udp;
 using namespace std;
 
 mdns_client* mdns_client_;
-map<uint32_t, computer> computers; // identify by IPv4 address
+map<uint32_t, boost::shared_ptr<computer> > computers; // identify by IPv4 address
 
 class mdns_server
 {
@@ -195,10 +195,11 @@ class mdns_server
 			ipv4_address address = read_ipv4_address(recv_buffer_, start);
 			// if not already existing, creating new computer
 			if (!computers.count(address.address)) {
-				computers.insert(make_pair(address.address, computer(address, fqdn)));
+				boost::shared_ptr<computer> comp(new computer(address, fqdn));
+				computers.insert(make_pair(address.address, comp));
 			} else {
 				// maybe we need to another service
-				computers[address.address].add_service(fqdn);
+				computers[address.address]->add_service(fqdn);
 			}
 		}
 
