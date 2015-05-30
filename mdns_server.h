@@ -21,6 +21,7 @@
 
 #include "shared.h"
 #include "mdns_client.h"
+#include "computer.h"
 
 using boost::asio::ip::udp;
 
@@ -29,6 +30,7 @@ using boost::asio::ip::udp;
 using namespace std;
 
 mdns_client* mdns_client_;
+map<uint32_t, computer> computers; // identify by IPv4 address
 
 class mdns_server
 {
@@ -38,6 +40,7 @@ class mdns_server
 			
 			boost::system::error_code ec;
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
+			socket_.set_option(boost::asio::ip::multicast::enable_loopback(false));
 			
 			boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
 			socket_.set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
@@ -58,7 +61,7 @@ class mdns_server
 		void handle_receive(const boost::system::error_code& error,
 		  std::size_t /*bytes_transferred*/) {
 			if (!error || error == boost::asio::error::message_size){
-				deb(cout << "odebrałem zapytanie mDNS\n";)
+				deb(cout << "\nodebrałem zapytanie mDNS\n";)
 
 				size_t end;
 				mdns_header mdns_header_ = read_mdns_header(recv_buffer_, end);
@@ -86,9 +89,8 @@ class mdns_server
 				} else if (mdns_header_.flags == RESPONSE_FLAG) {
 					// handling response to query
 					if (type_ == dns_type::A) {
-						if (fqdn[0] == my_name && (service_ = which_my_service(fqdn, 1)) != NONE ) {
-							send_response(dns_type::A, service_);
-						}
+						handle_a_response(fqdn, end);
+						
 					} else if (type_ == dns_type::PTR) {
 						// sending query for IP
 						handle_ptr_response(fqdn, end);
@@ -186,6 +188,18 @@ class mdns_server
 		void handle_ptr_response(vector<string> fqdn, size_t start) {
 			// nie wiem do końca, póki co interesuje mnie tylko nazwa
 			mdns_client_->send_query(dns_type::A, fqdn);
+		}
+
+		void handle_a_response(vector<string> fqdn, size_t start) {
+			// getting IP address
+			ipv4_address address = read_ipv4_address(recv_buffer_, start);
+			// if not already existing, creating new computer
+			if (!computers.count(address.address)) {
+				computers.insert(make_pair(address.address, computer(address, fqdn)));
+			} else {
+				// maybe we need to another service
+				computers[address.address].add_service(fqdn);
+			}
 		}
 
 		void handle_send(//boost::shared_ptr<std::string> /*message*/,

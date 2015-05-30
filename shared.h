@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <memory>
+#include <map>
 
 #include "boost/program_options.hpp"
 #include <boost/asio.hpp>
@@ -71,6 +72,10 @@ struct mdns_header {
 	uint16_t arcount;
 };
 
+struct ipv4_address {
+	uint32_t ttl;
+	uint32_t address;
+};
 
 mdns_header read_mdns_header(char buffer[], size_t& end) {
 	mdns_header res;
@@ -135,6 +140,21 @@ service which_my_service(vector<string>& fqdn, size_t start) {
 		fqdn[start + 2] == "_local")
 		return service::TCP;
 	return NONE;
+}
+
+
+ipv4_address read_ipv4_address(char buffer[], size_t& end) {
+	ipv4_address res;
+	uint32_t val;
+	
+	memcpy((char *)&val, buffer, 4);
+	res.ttl = ntohl(val);
+	// we ommit length - in IPv4 it is known 
+	memcpy((char *)&val, buffer + 6, 4);
+	res.address = ntohl(val);
+
+	end += 10;
+	return res;
 }
 
 #endif
