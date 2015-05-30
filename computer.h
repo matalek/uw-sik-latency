@@ -3,13 +3,15 @@
 
 #include "shared.h"
 
-class computer {
+class computer : public boost::enable_shared_from_this<computer> {
 	public:
 
 		//~ computer() : socket_udp(*io_service)  { } // do zastanowienia się
 		
 		computer(ipv4_address add, vector<string>& fqdn) :
-			socket_udp(*io_service) {
+			socket_udp(*io_service),
+			socket_tcp(*io_service) {
+				
 			address = add.address;
 			ttl = add.ttl;
 			name = fqdn[0];
@@ -20,8 +22,9 @@ class computer {
 			socket_udp.open(udp::v4());
 			remote_udp_endpoint.address(boost::asio::ip::address_v4(address));
 			remote_udp_endpoint.port(udp_port_num);
-
 			
+			remote_tcp_endpoint.address(boost::asio::ip::address_v4(address));
+			remote_tcp_endpoint.port(SSH_PORT_NUM);
 
 			// only temporary here
 			//~ measure_udp();
@@ -35,6 +38,7 @@ class computer {
 
 		void measure() {
 			measure_udp();
+			measure_tcp();
 		}
 		
 		string get_name() {
@@ -115,7 +119,7 @@ class computer {
 				// KONIECZNE???
 				cerr << start_time << " " << middle_time << "\n"; 
 				uint64_t res = end_time - start_time;
-				deb(cout << "Wynik pomiaru: " << res << " " << start_time << " " << end_time << "\n";)
+				deb(cout << "Wynik pomiaru udp: " << res << " " << start_time << " " << end_time << "\n";)
 
 				udp_times.push(res);
 				udp_sum += res;
@@ -125,29 +129,47 @@ class computer {
 				}
 		}
 
-		//~ void measure_tcp {
-			//~ struct timeval tv;
-			//~ gettimeofday(&tv,NULL);
-			//~ tcp_start_time = 1000000 * tv.tv_sec + tv.tv_usec;
-//~ 
-			//~ // connect socket to the server
-			//~ if (connect(sock, addr_result->ai_addr, addr_result->ai_addrlen) < 0)
-				//~ syserr("connect");
-//~ 
-			//~ // wyliczenie czasu otrzymania odpowiedzi
-			//~ gettimeofday(&tv,NULL);
-			//~ uint64_t end_time = 1000000 * tv.tv_sec + tv.tv_usec;
-//~ 
-		//~ }
+		void measure_tcp() {
+			struct timeval tv;
+			gettimeofday(&tv,NULL);
+			tcp_start_time = 1000000 * tv.tv_sec + tv.tv_usec;
+
+			// connect socket to the server
+			socket_tcp.async_connect(remote_tcp_endpoint,
+				boost::bind(&computer::handle_connect_tcp, shared_from_this(),
+				boost::asio::placeholders::error));
+		}
+
+		void handle_connect_tcp(const boost::system::error_code& /*error*/) {
+
+			// time of receiving answer
+			struct timeval tv;
+			gettimeofday(&tv,NULL);
+			uint64_t end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+
+			uint64_t res = end_time - tcp_start_time;
+			deb(cout << "Wynik pomiaru tcp: " << res << " " << tcp_start_time << " " << end_time << "\n";)
+
+			tcp_times.push(res);
+			tcp_sum += res;
+			if (tcp_times.size() > 10) {
+				tcp_sum -= tcp_times.front();
+				tcp_times.pop();
+			}
+		}
 
 	
 		string name;
 		bool ssh_service; 
 		uint32_t address; // host order
 		uint32_t ttl;
+
 		udp::socket socket_udp;
 		udp::endpoint remote_udp_endpoint;
-		//~ udp::socket socket_tcp;
+
+		tcp::socket socket_tcp;
+		tcp::endpoint remote_tcp_endpoint;
+		
 		char recv_buffer_[BUFFER_SIZE];
 
 		queue<uint32_t> udp_times;

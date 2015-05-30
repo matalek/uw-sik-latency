@@ -23,7 +23,7 @@
 #include "mdns_client.h"
 #include "computer.h"
 
-using boost::asio::ip::udp;
+
 
 #define deb(a) a
 

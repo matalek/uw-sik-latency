@@ -29,7 +29,10 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+
 using namespace std;
+using boost::asio::ip::udp;
+using boost::asio::ip::tcp;
 
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
@@ -39,6 +42,7 @@ double ui_refresh_time = 1; // configured by -v option
 bool ssh_service; // configured by -s option
 
 #define MDNS_PORT_NUM 5353
+#define SSH_PORT_NUM 22
 #define BUFFER_SIZE   1500
 #define MAX_LINES 24
 #define HOSTNAME_SIZE 100
