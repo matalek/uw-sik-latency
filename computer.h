@@ -31,9 +31,29 @@ class computer {
 				ssh_service = true;
 		}
 
+		void measure() {
+			measure_udp();
+		}
+		
+		string get_name() {
+			return name;
+		}
+		
 		uint32_t get_udp_average() {
 			if (udp_times.size())
 				return udp_sum / udp_times.size();
+			return 0; 
+		}
+
+		uint32_t get_tcp_average() {
+			if (tcp_times.size())
+				return tcp_sum / tcp_times.size();
+			return 0; 
+		}
+
+		uint32_t get_icmp_average() {
+			if (icmp_times.size())
+				return icmp_sum / icmp_times.size();
 			return 0; 
 		}
 
