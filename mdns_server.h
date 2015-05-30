@@ -142,7 +142,7 @@ class mdns_server
 				deb(cout << "___" << oss.str() << "\n";)
 
 				// terminating FQDN with null byte
-				auto null_byte(new vector<uint8_t>{0});
+				boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
 				buffers.push_back(boost::asio::buffer(*null_byte));
 				
 				// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
@@ -152,17 +152,26 @@ class mdns_server
 				// IPv4 address record
 				//~ uint16_t type_class[] = {htons(type_ ), htons(0x8001)};
 				//~ uint16_t ntype_ = htons(type_);
+				boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_ ), htons(0x8001)});
+				buffers.push_back(boost::asio::buffer(*type_class));
 				
 				//~ buffers.push_back(boost::asio::buffer((char *)&ntype_, 2));
 
-				//~ uint32_t ttl[] = {htonl(20)}; // TO CHANGE, signed???
+				//~ uint32_t ttl[] = {htonl(20)}; 
 				//~ buffers.push_back(boost::asio::buffer(ttl));
+				boost::shared_ptr<vector<uint32_t> > ttl(new vector<uint32_t>{htonl(20)});// TO CHANGE, signed???
+				buffers.push_back(boost::asio::buffer(*ttl));
+				
 				//~ 
 				//~ uint16_t length[] = {htons(4)};
 				//~ buffers.push_back(boost::asio::buffer(length));
-//~ 
+				boost::shared_ptr<vector<uint16_t> > length(new vector<uint16_t>{htons(4)});
+				buffers.push_back(boost::asio::buffer(*length));
+				
 				//~ uint32_t add[] = {my_address};
 				//~ buffers.push_back(boost::asio::buffer(add));
+				boost::shared_ptr<vector<uint32_t> > add(new vector<uint32_t>{my_address});
+				buffers.push_back(boost::asio::buffer(*add));
 
 				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				
