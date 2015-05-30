@@ -21,6 +21,8 @@ class computer {
 			remote_udp_endpoint.address(boost::asio::ip::address_v4(address));
 			remote_udp_endpoint.port(udp_port_num);
 
+			
+
 			// only temporary here
 			//~ measure_udp();
 			
@@ -122,6 +124,22 @@ class computer {
 					udp_times.pop();
 				}
 		}
+
+		//~ void measure_tcp {
+			//~ struct timeval tv;
+			//~ gettimeofday(&tv,NULL);
+			//~ tcp_start_time = 1000000 * tv.tv_sec + tv.tv_usec;
+//~ 
+			//~ // connect socket to the server
+			//~ if (connect(sock, addr_result->ai_addr, addr_result->ai_addrlen) < 0)
+				//~ syserr("connect");
+//~ 
+			//~ // wyliczenie czasu otrzymania odpowiedzi
+			//~ gettimeofday(&tv,NULL);
+			//~ uint64_t end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+//~ 
+		//~ }
+
 	
 		string name;
 		bool ssh_service; 
@@ -139,6 +157,8 @@ class computer {
 		uint32_t udp_sum;
 		uint32_t tcp_sum;
 		uint32_t icmp_sum;
+
+		uint64_t tcp_start_time;
 		
 };
 

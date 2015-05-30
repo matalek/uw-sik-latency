@@ -50,6 +50,10 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 				//~ cout << oss.str() << "\n";
 				//~ lines.push_back(oss.str());
 			//~ }
+
+			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this));
+
+			
 			boost::asio::async_write(socket_, boost::asio::buffer(message_),
 				boost::bind(&tcp_connection::handle_start, shared_from_this(),
 				boost::asio::placeholders::error,
@@ -66,6 +70,7 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 				lines.push_back(oss.str());
 			}
 			write_lines();
+			
 		}
 
 	private:
@@ -122,10 +127,18 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 		}
 
 		tcp_connection()
-		//boost::asio::io_service& io_service)
-		: socket_(*io_service) {
+			: socket_(*io_service), timer_(*io_service, boost::posix_time::seconds(ui_refresh_time)) {
 			start_line = 0;
 		}
+
+		void handle_timer() {
+			refresh();
+			
+			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(ui_refresh_time));
+			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this));
+
+		}
+		
 
 		void handle_start(const boost::system::error_code& /*error*/,
 		  size_t /*bytes_transferred*/) { refresh(); }
@@ -138,11 +151,13 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			char c;
 			response_stream >> c;
 			//cout << &response_;
-			  write(c); }
+			write(c);
+		}
 
 		tcp::socket socket_;
 		std::string message_;
 		boost::asio::streambuf response_;
+		boost::asio::deadline_timer timer_;
 
 		vector<string> lines;
 		unsigned int start_line;
