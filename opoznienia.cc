@@ -33,59 +33,18 @@
 #include "mdns_client.h"
 #include "shared.h"
 #include "ui.h"
+#include "udp_server.h"
 
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 
 
-uint16_t udp_port_num = 3382; // configured by -u option
-uint16_t ui_port_num = 3637; // configured by -U option
-double measurement_time = 1.; // configured by -t option
-double exploration_time = 1.; // configured by -T option
-double ui_refresh_time = 1; // configured by -v option
-bool ssh_service; // configured by -s option
+
 
 using namespace std;
 
 
-void udp_delay_server() {
-	try {
-		
-		boost::asio::io_service io_service;
 
-		udp::socket socket(io_service, udp::endpoint(udp::v4(), udp_port_num));
-
-		for (;;) {
-			boost::array<uint64_t, 1> recv_buf;
-			udp::endpoint remote_endpoint;
-			boost::system::error_code error;
-			socket.receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
-
-			cout << be64toh(recv_buf[0]) << "\n";
-
-			if (error && error != boost::asio::error::message_size)
-				throw boost::system::system_error(error);
-
-			// calculating current time
-			struct timeval tv;
-			gettimeofday(&tv,NULL);
-			unsigned long long time = 1000000 * tv.tv_sec + tv.tv_usec;
-
-			// creating message
-			boost::array<uint64_t, 2> message;
-			message[0] = recv_buf[0];
-			message[1] = htobe64(time);
-
-			boost::system::error_code ignored_error;
-			socket.send_to(boost::asio::buffer(message),
-				remote_endpoint, 0, ignored_error);
-		}
-	} catch (std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-	}
-
-}
 
 std::string make_daytime_string()
 {
