@@ -92,8 +92,9 @@ void set_name() {
 	gethostname(hostname, HOSTNAME_SIZE);
 
 	deb(printf("hostname: %s\n", hostname);)
-	my_name = { hostname, "_opoznienia", "_udp", "_local"};
-	deb(cout << "---" << my_name[0] << "\n";)
+	//~ my_name = { hostname, "_opoznienia", "_udp", "_local"};
+	//~ deb(cout << "---" << my_name[0] << "\n";)
+	my_name = hostname;
 }
 
 int main(int argc, char *argv[]) {
@@ -167,7 +168,7 @@ int main(int argc, char *argv[]) {
 		//~ fqdn[0] = "_opoznienia";
 		//~ fqdn[1] = "_udp";
 		//~ fqdn[2] = "_local";
-		mdns_client_.send_query(dns_type::A, fqdn);
+		mdns_client_.send_query(dns_type::PTR, fqdn);
 
 		io_service.run();
 

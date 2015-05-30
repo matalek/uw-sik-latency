@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <sstream>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "boost/program_options.hpp"
 #include <boost/asio.hpp>
@@ -60,16 +61,25 @@ class mdns_server
 				size_t end;
 				mdns_header mdns_header_ = read_mdns_header(recv_buffer_, end);
 
-				vector<string> fqdn = read_fqdn(recv_buffer_, end);
+				uint16_t type_ = 0, class_ = 0;
+				vector<string> fqdn = read_fqdn(recv_buffer_, type_, class_, end);
+
 
 				// at first: not compressed
 
-				// answering A type query
+				service service_;
+				// answering query
 				if (mdns_header_.flags == 0) {
-					if (fqdn == my_name) {
-						// sending response via multicast
-						send_response(dns_type::A);
-						
+					deb(cout << "type: " << static_cast<int>(type_);)
+					
+					if (type_ == dns_type::A) {
+						if (fqdn[0] == my_name && (service_ = which_my_service(fqdn, 1)) != NONE ) {
+							send_response(dns_type::A, service_);
+						}
+					} else if (type_ == dns_type::PTR) {
+						if ((service_ = which_my_service(fqdn, 0)) != NONE ) {
+							send_response(dns_type::PTR, service_);
+						}
 					}
 				}
 				
@@ -85,7 +95,8 @@ class mdns_server
 			}
 		}
 
-		void send_response(dns_type type) {
+		// sending response via multicast
+		void send_response(dns_type type_, service service_) {
 			deb(cout << "zaczynam wysyłać odpowiedź na mdns\n";)
 			try {
 				udp::endpoint receiver_endpoint;
@@ -95,39 +106,72 @@ class mdns_server
 				std::ostringstream oss;
 				
 				// ID, Flags (84 00 for response), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
-				vector<uint16_t> header = {0, htons(RESPONSE_FLAG), 0, htons(1), 0, 0};
+				//~ vector<uint16_t> header = {0, htons(RESPONSE_FLAG), 0, htons(1), 0, 0};
+				boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, htons(RESPONSE_FLAG), 0, htons(1), 0, 0});
+				//~ for (size_t i = 0; i < header.size(); i++)
+					//~ oss << static_cast<uint16_t>(header[i]);
 				std::vector<boost::asio::const_buffer> buffers;
-				buffers.push_back(boost::asio::buffer(header));
+
+				//~ boost::shared_ptr<std::vector<boost::asio::const_buffer> > buffers = make_shared<std::vector<boost::asio::const_buffer> >()
+				//~ buffers.clear();
+				buffers.push_back(boost::asio::buffer(*header));
+
+				// crete FQDN appropriate for this service
+				
+				vector<string> fqdn = {my_name};
+				if (service_ == service::UDP) {
+					fqdn.push_back("_opoznienia");
+					fqdn.push_back("_udp");
+				} else if (service_ == service::UDP) {
+					fqdn.push_back("_ssh");
+					fqdn.push_back("_tcp");
+				}
+				fqdn.push_back("_local");
+
+				deb(cout << fqdn[0] << " " << fqdn[1] << " " << fqdn[2] << " " << fqdn[2] << " " <<  "\n";)
 
 				// FQDN specified by a list of component strings
-				for (size_t i = 0; i < my_name.size(); i++) {
-					uint8_t len = static_cast<uint8_t>(my_name[i].length());
-					oss << len << my_name[i];
+				for (size_t i = 0; i < fqdn.size(); i++) {
+					cout << "!!!" << fqdn[i].length() << " " << fqdn[i] << "\n";
+					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
+					oss << len << fqdn[i];
 				}
-				buffers.push_back(boost::asio::buffer(oss.str()));
+				//~ oss << static_cast<uint8_t>(0);
+				boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				buffers.push_back(boost::asio::buffer(*message));
+				//~ deb(cout << "buf " << buffers->size() << "\n";)
+				deb(cout << "___" << oss.str() << "\n";)
 
 				// terminating FQDN with null byte
-				uint8_t null_byte = 0;
-				buffers.push_back(boost::asio::buffer(&null_byte, 1));
+				uint8_t null_byte[] = {0};
+				//~ deb(cout << static_cast<int>(null_byte[0]) << "\n";)
+				//~ buffers->push_back(boost::asio::buffer((char *)&null_byte, 1));
+				boost::shared_ptr<vector<uint8_t> > message2(new vector<uint8_t>{0});
+				buffers.push_back(boost::asio::buffer(*message2));
 				
 				// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
-				//~ uint16_t flags[] = {htons(type), htons(1)};
+				//~ uint16_t flags[] = {htons(type_), htons(1)};
 				//~ buffers.push_back(boost::asio::buffer(flags));
 
 				// IPv4 address record
-				uint16_t type_class[] = {htons(1), htons(0x8001)};
-				buffers.push_back(boost::asio::buffer(type_class));
-
-				uint32_t ttl[] = {htonl(20)}; // TO CHANGE, signed???
-				buffers.push_back(boost::asio::buffer(ttl));
+				//~ uint16_t type_class[] = {htons(type_ ), htons(0x8001)};
+				//~ uint16_t ntype_ = htons(type_);
 				
-				uint16_t length[] = {htons(4)};
-				buffers.push_back(boost::asio::buffer(length));
+				//~ buffers.push_back(boost::asio::buffer((char *)&ntype_, 2));
 
-				uint32_t add[] = {my_address};
-				buffers.push_back(boost::asio::buffer(add));
+				//~ uint32_t ttl[] = {htonl(20)}; // TO CHANGE, signed???
+				//~ buffers.push_back(boost::asio::buffer(ttl));
+				//~ 
+				//~ uint16_t length[] = {htons(4)};
+				//~ buffers.push_back(boost::asio::buffer(length));
+//~ 
+				//~ uint32_t add[] = {my_address};
+				//~ buffers.push_back(boost::asio::buffer(add));
+
+				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				
 				socket_.async_send_to(buffers, receiver_endpoint,
+				//~ socket_.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
 				  boost::bind(&mdns_server::handle_send, this,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));

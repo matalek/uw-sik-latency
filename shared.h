@@ -1,11 +1,30 @@
 #ifndef SHARED_H
 #define SHARED_H
 
-#include <iostream>
 #include <sstream>
 #include <vector>
-#include <stdio.h>
 #include <string.h>
+#include <iostream>
+#include <utility>
+#include <thread>
+#include <chrono>
+#include <functional>
+#include <ctime>
+#include <string>
+#include <cstdint>
+#include <endian.h>
+#include <algorithm>
+#include <sstream>
+#include <stdio.h>
+#include <unistd.h>
+#include <memory>
+
+#include "boost/program_options.hpp"
+#include <boost/asio.hpp>
+#include <boost/array.hpp>
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 using namespace std;
 
@@ -17,7 +36,7 @@ double ui_refresh_time = 1; // configured by -v option
 bool ssh_service; // configured by -s option
 
 #define MDNS_PORT_NUM 5353
-#define BUFFER_SIZE   1000
+#define BUFFER_SIZE   1500
 #define MAX_LINES 24
 #define HOSTNAME_SIZE 100
 
@@ -25,13 +44,20 @@ bool ssh_service; // configured by -s option
 
 #define deb(a) a
 
-vector<string> my_name;
+//~ vector<string> my_name;
+string my_name;
 uint32_t my_address; // BE order
 string my_address_str;
 
 enum dns_type {
 	A = 1,
 	PTR = 12
+};
+
+enum service {
+	UDP,
+	TCP,
+	NONE
 };
 
 struct mdns_header {
@@ -65,7 +91,7 @@ mdns_header read_mdns_header(char buffer[], size_t& end) {
 	return res;
 }
 
-vector<string> read_fqdn(char buffer[], size_t& start) {
+vector<string> read_fqdn(char buffer[], uint16_t& type_, uint16_t& class_, size_t& start) {
 	vector<string> res;
 
 	while (true) {
@@ -82,7 +108,28 @@ vector<string> read_fqdn(char buffer[], size_t& start) {
 		deb(std::cout << "imie: " << name << "\n";)
 	}
 	start++;
+	memcpy((char *)&type_, buffer + start, 2);
+	type_ = ntohs(type_);
+	start += 2;
+	memcpy((char *)&class_, buffer + start, 2);
+	class_ = ntohs(class_);
+	start += 2;
+	
 	return res;
+}
+
+service which_my_service(vector<string>& fqdn, size_t start) {
+	if (start + 2 < fqdn.size() &&
+		fqdn[start] == "_opoznienia" &&
+		fqdn[start + 1] == "_udp" &&
+		fqdn[start + 2] == "_local")
+		return service::UDP;
+	if (ssh_service && start + 2 < fqdn.size() &&
+		fqdn[start] == "_ssh" &&
+		fqdn[start + 1] == "_tcp" &&
+		fqdn[start + 2] == "_local")
+		return service::TCP;
+	return NONE;
 }
 
 #endif
