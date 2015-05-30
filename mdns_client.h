@@ -40,7 +40,7 @@ class mdns_client
 			socket_.open(udp::v4());
 		}
 
-		void send_query(dns_type type, vector<string> fqdn) {
+		void send_query(dns_type type_, vector<string> fqdn) {
 			deb(cout << "zaczynam wysyłać mdnsa\n";)
 			try {
 
@@ -48,14 +48,13 @@ class mdns_client
 				receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
 				receiver_endpoint.port(MDNS_PORT_NUM);
 
-				//~ boost::shared_ptr<std::string> message(new std::string());
-
 				std::ostringstream oss;
+				std::vector<boost::asio::const_buffer> buffers;
 				
 				// ID, Flags (0 for query), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
-				vector<unsigned short int> header = {0, 0, htons(1), 0, 0, 0};
-				std::vector<boost::asio::const_buffer> buffers;
-				buffers.push_back(boost::asio::buffer(header));
+				boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, 0, htons(1), 0, 0, 0});
+				buffers.push_back(boost::asio::buffer(*header));
+
 				
 				//~ for (size_t i = 0; i < header.size(); i++)
 					//~ oss << header[i];
@@ -65,19 +64,17 @@ class mdns_client
 					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
 					oss << len << fqdn[i];
 				}
-				buffers.push_back(boost::asio::buffer(oss.str()));
+
+				boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				buffers.push_back(boost::asio::buffer(*message));
 
 				// terminating FQDN with null byte
-				uint8_t null_byte = 0;
-				buffers.push_back(boost::asio::buffer(&null_byte, 1));
-				//~ oss << null_byte;
+				boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
+				buffers.push_back(boost::asio::buffer(*null_byte));
 				
-				// QTYPE (00 01 for a host address query) & QCLASS (00 01 for Internet)
-				uint16_t flags[] = {htons(type), htons(1)};
-				buffers.push_back(boost::asio::buffer(flags));
-				//~ oss << htons(type) << htons(1);
-				
-				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				// QTYPE & QCLASS (00 01 for Internet)
+				boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_), htons(1)});
+				buffers.push_back(boost::asio::buffer(*type_class));
 
 				socket_.async_send_to(
 				buffers,
