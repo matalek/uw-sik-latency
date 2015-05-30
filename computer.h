@@ -18,6 +18,8 @@ class computer {
 
 			// creating sockets for measurement
 			socket_udp.open(udp::v4());
+			remote_udp_endpoint.address(boost::asio::ip::address_v4(address));
+			remote_udp_endpoint.port(udp_port_num);
 
 			// only temporary here
 			measure_udp();
@@ -29,6 +31,11 @@ class computer {
 				ssh_service = true;
 		}
 
+		uint32_t get_udp_average() {
+			if (udp_times.size())
+				return udp_sum / udp_times.size();
+			return 0; 
+		}
 
 	private:
 
@@ -41,16 +48,10 @@ class computer {
 
 			// creating message
 			boost::shared_ptr<vector<uint64_t> > message(new vector<uint64_t>{htobe64(time)});
-
-			udp::endpoint receiver_endpoint;
-				receiver_endpoint.address(boost::asio::ip::address_v4(address));
-				//~ receiver_endpoint.address(boost::asio::ip::address::from_string("192.168.1.2"));
-				
-				receiver_endpoint.port(udp_port_num);
 				
 			deb(cout << "wysyłam pomiar udp\n";)
 
-			socket_udp.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
+			socket_udp.async_send_to(boost::asio::buffer(*message), remote_udp_endpoint,
 				boost::bind(&computer::handle_send_udp, this,
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
@@ -59,15 +60,43 @@ class computer {
 		void handle_send_udp(const boost::system::error_code& /*error*/,
 			std::size_t /*bytes_transferred*/) {
 			// reading
-			
+			socket_udp.async_receive_from(
+				boost::asio::buffer(recv_buffer_), remote_udp_endpoint,
+				boost::bind(&computer::handle_receive_udp, this,
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
 			
 		}
 		
-		void handle_read_udp(const boost::system::error_code& /*error*/,
+		void handle_receive_udp(const boost::system::error_code& /*error*/,
 		  std::size_t /*bytes_transferred*/) {
 			// calculating and saving time
 			deb(cout << "odpowiedź na udp\n";)
-			  
+
+				uint64_t val;
+				memcpy((char *)&val, recv_buffer_, 8);
+				uint64_t start_time = be64toh(val);
+				
+				memcpy((char *)&val, recv_buffer_ + 8, 8);
+				uint64_t middle_time = be64toh(val);
+				
+				// time of receiving answer
+				struct timeval tv;
+				gettimeofday(&tv,NULL);
+				uint64_t end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+
+				// writing on error output received data
+				// KONIECZNE???
+				cerr << start_time << " " << middle_time << "\n"; 
+				uint64_t res = end_time - start_time;
+				deb(cout << "Wynik pomiaru: " << res << " " << start_time << " " << end_time << "\n";)
+
+				udp_times.push(res);
+				udp_sum += res;
+				if (udp_times.size() > 10) {
+					udp_sum -= udp_times.front();
+					udp_times.pop();
+				}
 		}
 	
 		string name;
@@ -75,9 +104,17 @@ class computer {
 		uint32_t address; // host order
 		uint32_t ttl;
 		udp::socket socket_udp;
+		udp::endpoint remote_udp_endpoint;
 		//~ udp::socket socket_tcp;
+		char recv_buffer_[BUFFER_SIZE];
 
+		queue<uint32_t> udp_times;
+		queue<uint32_t> tcp_times;
+		queue<uint32_t> icmp_times;
 
+		uint32_t udp_sum;
+		uint32_t tcp_sum;
+		uint32_t icmp_sum;
 		
 };
 

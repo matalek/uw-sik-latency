@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <memory>
 #include <map>
+#include <queue>
 
 #include "boost/program_options.hpp"
 #include <boost/asio.hpp>
