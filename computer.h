@@ -188,7 +188,8 @@ class computer : public boost::enable_shared_from_this<computer> {
 			os << echo_request << body;
 
 			// send the request
-			icmp_start_time = get_time();
+			icmp_start_times.insert(make_pair(sequence_number, get_time()));
+			
 			socket_icmp.send_to(request_buffer.data(), remote_icmp_endpoint);
 
 			// wait up to five seconds for a reply
@@ -229,23 +230,16 @@ class computer : public boost::enable_shared_from_this<computer> {
 			// we can receive all ICMP packets received by the host, so we need to
 			// filter out only the echo replies that match the our identifier and
 			// expected sequence number.
+			map<unsigned short, uint64_t>::iterator it, it2;
 			if (is && icmp_hdr.type() == icmp_header::echo_reply
 			&& icmp_hdr.identifier() == static_cast<unsigned short>(::getpid())
-			&& icmp_hdr.sequence_number() == sequence_number)
-			{
-				// if this is the first reply, interrupt the five second timeout.
-				//~ if (num_replies_++ == 0)
-				//~ timer_.cancel();
-
-				// Print out some information about the reply packet.
-				std::cout << length - ipv4_hdr.header_length()
-				<< " bytes from " << ipv4_hdr.source_address()
-				<< ": icmp_seq=" << icmp_hdr.sequence_number()
-				<< ", ttl=" << ipv4_hdr.time_to_live()
-				<< ", time=" << (get_time() - icmp_start_time) << " ms"
-				<< std::endl;
-
-				uint64_t res = get_time() - icmp_start_time;
+			&& (it = icmp_start_times.find(icmp_hdr.sequence_number())) != icmp_start_times.end()) {
+				
+				uint64_t res = get_time() - it->second;
+				it2 = it;
+				icmp_start_times.erase(it, ++it2);
+				
+				deb(cout << "Wynik pomiaru icmp: " << res << "\n";)
 				
 				icmp_times.push(res);
 				icmp_sum += res;
@@ -283,7 +277,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 		uint32_t icmp_sum;
 
 		uint64_t tcp_start_time;
-		uint64_t icmp_start_time;
+		map<unsigned short, uint64_t> icmp_start_times;
 
 		boost::asio::streambuf icmp_reply_buffer;
 		unsigned short sequence_number;
