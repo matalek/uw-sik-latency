@@ -108,9 +108,9 @@ int main(int argc, char *argv[]) {
 	desc.add_options()
 		(",u", po::value<int>(), "port serwera do pomiaru opóźnień przez UDP: 3382")
 		(",U", po::value<int>(), "port serwera do połączeń z interfejsem użytkownika: 3637")
-		(",t", po::value<int>(), "czas pomiędzy pomiarami opóźnień: 1 sekunda")
-		(",T", po::value<int>(), "czas pomiędzy wykrywaniem komputerów: 10 sekund")
-		(",v", po::value<int>(), "czas pomiędzy aktualizacjami interfejsu użytkownika: 1 sekunda")
+		(",t", po::value<double>(), "czas pomiędzy pomiarami opóźnień: 1 sekunda")
+		(",T", po::value<double>(), "czas pomiędzy wykrywaniem komputerów: 10 sekund")
+		(",v", po::value<double>(), "czas pomiędzy aktualizacjami interfejsu użytkownika: 1 sekunda")
 		(",s", "rozgłaszanie dostępu do usługi _ssh._tcp: domyślnie wyłączone")
 	;
 

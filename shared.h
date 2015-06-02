@@ -33,6 +33,7 @@
 using namespace std;
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
+using boost::asio::ip::icmp;
 
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
