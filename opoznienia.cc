@@ -176,11 +176,11 @@ int main(int argc, char *argv[]) {
 
 		measurement_server measurement_server{};
 
-		vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
+		//~ vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
 		//~ fqdn[0] = "_opoznienia";
 		//~ fqdn[1] = "_udp";
 		//~ fqdn[2] = "_local";
-		mdns_client_->send_query(dns_type::PTR, fqdn);
+		//~ mdns_client_->send_query(dns_type::PTR, fqdn);
 
 		
 		

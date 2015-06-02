@@ -29,17 +29,18 @@ using namespace std;
 
 
 
-class mdns_client
-{
+class mdns_client {
 	public:
 
-		mdns_client() //boost::asio::io_service& io_service)
-		: socket_(*io_service) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+		mdns_client() : socket_(*io_service), timer_(*io_service, boost::posix_time::seconds(exploration_time)) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
 			boost::system::error_code ec;
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
 			socket_.open(udp::v4());
+			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
 		}
 
+	
+	
 		void send_query(dns_type type_, vector<string> fqdn) {
 			deb(cout << "\nzaczynam wysyłać mdnsa\n";)
 			try {
@@ -91,19 +92,29 @@ class mdns_client
 			}
 		}
 
-		
-
 	private:
+	
+		void ask_for_services() {
+			vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
+			send_query(dns_type::PTR, fqdn);
 
+			fqdn = { "_ssh", "_tcp", "_local"};
+			send_query(dns_type::PTR, fqdn);
+			
+			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(exploration_time));
+			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
+		}
 
 		void handle_send(//boost::shared_ptr<std::string> /*message*/,
-		  const boost::system::error_code& /*error*/,
-		  std::size_t /*bytes_transferred*/)
-		{
+			const boost::system::error_code& /*error*/,
+			std::size_t /*bytes_transferred*/) {
+				
 			deb(cout << "wysłano!!!\n";)
 		}
 
 		udp::socket socket_;
+		boost::asio::deadline_timer timer_;
+		
 
 };
 
