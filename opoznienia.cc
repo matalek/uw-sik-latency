@@ -1,3 +1,10 @@
+/*
+ * Run program with: sudo setcap cap_net_raw+eip ./opoznienia, in order
+ * to enable root previlages to create raw sockets.
+ *
+ *
+ */ 
+
 #include <iostream>
 #include <utility>
 #include <thread>
