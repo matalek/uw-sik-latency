@@ -48,7 +48,10 @@ bool ssh_service; // configured by -s option
 #define MAX_LINES 24
 #define HOSTNAME_SIZE 100
 
+#define ICMP_ID 0x13
 #define RESPONSE_FLAG 0x8400
+
+#define MY_INDEX "\0x34\0x71\0x71"
 
 #define deb(a) a
 

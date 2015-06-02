@@ -171,13 +171,21 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		void measure_icmp() {
-			string body("\"Hello!\" from Asio ping.");
 
+			// sending index number and group number
+			stringstream ss;
+			string body;
+			vector<uint8_t> msg = {0x34, 0x71, 0x71, 5};
+			for (size_t i = 0; i < msg.size(); i++)
+				ss << msg[i];
+			ss >> body;
+			
+			deb(cout << "BODY " << body << " " << sizeof(body) << "\n"); 
 			// create an ICMP header for an echo request
 			icmp_header echo_request;
 			echo_request.type(icmp_header::echo_request);
 			echo_request.code(0);
-			echo_request.identifier(static_cast<unsigned short>(::getpid()));
+			echo_request.identifier(ICMP_ID);
 			echo_request.sequence_number(++sequence_number);
 			deb(cout << "nadałem numer " << sequence_number << "\n";)
 			compute_checksum(echo_request, body.begin(), body.end());
@@ -223,7 +231,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 			icmp_header icmp_hdr;
 			is >> ipv4_hdr >> icmp_hdr;
 
-			deb(cout << "odebrałem icmp " << (int)icmp_hdr.identifier() << " " << ::getpid() << " " <<
+			deb(cout << "odebrałem icmp " <<
 			icmp_hdr.sequence_number() << " " << sequence_number << " " <<
 			icmp_hdr.type() << " " << icmp_header::echo_reply << "\n";)
 
@@ -232,7 +240,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 			// expected sequence number.
 			map<unsigned short, uint64_t>::iterator it, it2;
 			if (is && icmp_hdr.type() == icmp_header::echo_reply
-			&& icmp_hdr.identifier() == static_cast<unsigned short>(::getpid())
+			&& icmp_hdr.identifier() == ICMP_ID
 			&& (it = icmp_start_times.find(icmp_hdr.sequence_number())) != icmp_start_times.end()) {
 				
 				uint64_t res = get_time() - it->second;
