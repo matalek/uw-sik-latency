@@ -37,14 +37,23 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		void add_service(vector<string>& fqdn) {
+			if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "_local")
+				opoznienia_service = true;
+			
 			if (fqdn.size() == 4 && fqdn[1] == "_ssh" && fqdn[2] == "_tcp" && fqdn[3] == "_local")
 				ssh_service = true;
 		}
 
 		void measure() {
-			measure_udp();
-			measure_tcp();
-			measure_icmp();
+			deb(cout << "SSH" << ssh_service << "\n";)
+			deb(cout << "-------" << tcp_times.size() << "\n";)
+			if (opoznienia_service) {
+				measure_udp();
+				measure_icmp();
+			}
+			if (ssh_service)
+				measure_tcp();
+
 		}
 		
 		string get_name() {
@@ -58,6 +67,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		uint32_t get_tcp_average() {
+			cout << "-------" << tcp_times.size() << "\n";
 			if (tcp_times.size())
 				return tcp_sum / tcp_times.size();
 			return 0; 
@@ -261,6 +271,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 	
 		string name;
+		bool opoznienia_service;
 		bool ssh_service; 
 		uint32_t address; // host order
 		uint32_t ttl;

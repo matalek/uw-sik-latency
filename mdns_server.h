@@ -23,10 +23,6 @@
 #include "mdns_client.h"
 #include "computer.h"
 
-
-
-#define deb(a) a
-
 using namespace std;
 
 mdns_client* mdns_client_;
@@ -134,7 +130,7 @@ class mdns_server
 				if (service_ == service::UDP) {
 					fqdn.push_back("_opoznienia");
 					fqdn.push_back("_udp");
-				} else if (service_ == service::UDP) {
+				} else if (service_ == service::TCP) {
 					fqdn.push_back("_ssh");
 					fqdn.push_back("_tcp");
 				}
