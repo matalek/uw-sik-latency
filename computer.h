@@ -10,13 +10,13 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 		//~ computer() : socket_udp(*io_service)  { } // do zastanowienia się
 		
-		computer(ipv4_address add, vector<string>& fqdn) :
+		computer(uint32_t add, vector<string>& fqdn) :
 			socket_udp(*io_service),
 			socket_tcp(*io_service),
 			socket_icmp(*io_service, icmp::v4()) { // czy nie lepiej jedno?
 				
-			address = add.address;
-			ttl = add.ttl;
+			address = add;
+			//~ ttl = add.ttl();
 			name = fqdn[0];
 			add_service(fqdn);
 			deb(cout << "Dodaję komputer " << name << " " << address<< "\n";)
@@ -207,7 +207,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 			// send the request
 			icmp_start_times.insert(make_pair(sequence_number, get_time()));
-			
+			deb(cout << "zaraz wyślę zapytanie icmp\n";)
 			socket_icmp.send_to(request_buffer.data(), remote_icmp_endpoint);
 
 			// wait up to five seconds for a reply

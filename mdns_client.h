@@ -42,7 +42,7 @@ class mdns_client {
 	
 	
 		void send_query(dns_type type_, vector<string> fqdn) {
-			deb(cout << "\nzaczynam wysyłać mdnsa\n";)
+			deb(cout << "\nzaczynam wysyłać mdnsa typu " << type_ << " \n";)
 			try {
 
 				udp::endpoint receiver_endpoint;

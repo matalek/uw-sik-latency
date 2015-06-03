@@ -22,6 +22,7 @@
 #include "shared.h"
 #include "mdns_client.h"
 #include "computer.h"
+#include "mdns_fields.h"
 
 using namespace std;
 
@@ -60,8 +61,33 @@ class mdns_server
 				deb(cout << "\nodebrałem zapytanie mDNS\n";)
 
 				size_t end;
-				mdns_header mdns_header_ = read_mdns_header(recv_buffer_, end);
-
+				
+				stringstream ss;
+				ss << recv_buffer_;
+				mdns_header mdns_header_; // = read_mdns_header(recv_buffer_, end);
+				//~ ss >> mdns_header_;
+				mdns_header_.read(recv_buffer_);
+		
+				deb(cout << "odczytałem nagłówek \n";)
+				deb(cout << "type: " << static_cast<int>(mdns_header_.id()) << " " <<
+				static_cast<int>(mdns_header_.flags()) << " " <<
+				static_cast<int>(mdns_header_.qdcount()) << " " <<
+				static_cast<int>(mdns_header_.ancount()) << " " <<
+				static_cast<int>(mdns_header_.nscount()) << " " <<
+				static_cast<int>(mdns_header_.arcount()) << " " << "\n";)
+				for (int i = 0; i < 12; i++)
+					cout << static_cast<int>(recv_buffer_[i]) << " ";
+				cout << "\n";
+				deb(mdns_header_.pisz();)
+				/*
+				deb(cout << "pałowo: " << static_cast<int>(mdns_header_.id()) << " " <<
+				static_cast<int>(recv_buffer_[2]) << " " <<
+				static_cast<int>((recv_buffer_[3]) ) << " " <<
+				static_cast<int>(recv_buffer_[4]) << " " <<
+				static_cast<int>(recv_buffer_[5]) << " " <<
+				static_cast<int>(recv_buffer_[6]) << " " << "\n";) */
+				
+				end = 12;
 				uint16_t type_ = 0, class_ = 0;
 				vector<string> fqdn = read_fqdn(recv_buffer_, type_, class_, end);
 
@@ -70,8 +96,9 @@ class mdns_server
 
 				service service_;
 				// answering query
-				if (mdns_header_.flags == 0) {
-					deb(cout << "type: " << static_cast<int>(type_);)
+				deb(cout << "type: " << static_cast<int>(type_) << static_cast<int>(mdns_header_.flags()) << "\n";)
+				if (mdns_header_.flags() == 0) {
+					
 					
 					if (type_ == dns_type::A) {
 						if (fqdn[0] == my_name && (service_ = which_my_service(fqdn, 1)) != NONE ) {
@@ -82,8 +109,9 @@ class mdns_server
 							send_response(dns_type::PTR, service_);
 						}
 					}
-				} else if (mdns_header_.flags == RESPONSE_FLAG) {
+				} else if (mdns_header_.flags() == RESPONSE_FLAG) {
 					// handling response to query
+					deb(cout << "response type: " << static_cast<int>(type_);)
 					if (type_ == dns_type::A) {
 						handle_a_response(fqdn, end);
 						
@@ -121,8 +149,17 @@ class mdns_server
 				std::vector<boost::asio::const_buffer> buffers;
 				
 				// ID, Flags (84 00 for response), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
-				boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, htons(RESPONSE_FLAG), 0, htons(1), 0, 0});
-				buffers.push_back(boost::asio::buffer(*header));
+				mdns_header mdns_header_;
+				mdns_header_.id(0);
+				mdns_header_.flags(RESPONSE_FLAG);
+				mdns_header_.qdcount(0);
+				mdns_header_.ancount(1);
+				mdns_header_.nscount(0);
+				mdns_header_.arcount(0);
+				oss << mdns_header_;
+				
+				//~ boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, htons(RESPONSE_FLAG), 0, htons(1), 0, 0});
+				//~ buffers.push_back(boost::asio::buffer(*header));
 
 				// crete FQDN appropriate for this service
 				
@@ -145,32 +182,50 @@ class mdns_server
 					oss << len << fqdn[i];
 				}
 
-				boost::shared_ptr<std::string> message(new std::string(oss.str()));
-				buffers.push_back(boost::asio::buffer(*message));
+				// terminating FQDN with null byte
+				oss << static_cast<uint8_t>(0);
+				
+				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				//~ buffers.push_back(boost::asio::buffer(*message));
 				deb(cout << "___" << oss.str() << "\n";)
 
-				// terminating FQDN with null byte
-				boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
-				buffers.push_back(boost::asio::buffer(*null_byte));
+				
+				//~ boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
+				//~ buffers.push_back(boost::asio::buffer(*null_byte));
+
+				mdns_answer mdns_answer_;
+				mdns_answer_.type(type_);
+				mdns_answer_.class_(0x8001);
+				mdns_answer_.ttl(20); // TO CHANGE, signed???
+
+				mdns_answer_.length(4);
+				
 
 				// IPv4 address record
-				boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_ ), htons(0x8001)});
+				/*boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_ ), htons(0x8001)});
 				buffers.push_back(boost::asio::buffer(*type_class));
 
-				boost::shared_ptr<vector<uint32_t> > ttl(new vector<uint32_t>{htonl(20)});// TO CHANGE, signed???
+				boost::shared_ptr<vector<uint32_t> > ttl(new vector<uint32_t>{htonl(20)});
 				buffers.push_back(boost::asio::buffer(*ttl));
 
 				boost::shared_ptr<vector<uint16_t> > length(new vector<uint16_t>{htons(4)});
 				buffers.push_back(boost::asio::buffer(*length));
-				
 
-				boost::shared_ptr<vector<uint32_t> > add(new vector<uint32_t>{my_address});
-				buffers.push_back(boost::asio::buffer(*add));
+				*/
 
-				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				ipv4_address address_;
+				address_.address(ntohl(my_address)); // może ogólnie zmienić
 				
-				socket_.async_send_to(buffers, receiver_endpoint,
-				//~ socket_.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
+				oss << mdns_answer_;
+				oss << address_;
+
+				//~ boost::shared_ptr<vector<uint32_t> > add(new vector<uint32_t>{my_address});
+				//~ buffers.push_back(boost::asio::buffer(*add));
+
+				boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				
+				//~ socket_.async_send_to( buffers, receiver_endpoint,
+				socket_.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
 				  boost::bind(&mdns_server::handle_send, this,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
@@ -188,14 +243,15 @@ class mdns_server
 
 		void handle_a_response(vector<string> fqdn, size_t start) {
 			// getting IP address
-			ipv4_address address = read_ipv4_address(recv_buffer_, start);
+			ipv4_address address;
+			address.read(recv_buffer_, start + 6); // where TTL and length?
 			// if not already existing, creating new computer
-			if (!computers.count(address.address)) {
-				boost::shared_ptr<computer> comp(new computer(address, fqdn));
-				computers.insert(make_pair(address.address, comp));
+			if (!computers.count(address.address())) {
+				boost::shared_ptr<computer> comp(new computer(address.address(), fqdn));
+				computers.insert(make_pair(address.address(), comp));
 			} else {
 				// maybe we need to another service
-				computers[address.address]->add_service(fqdn);
+				computers[address.address()]->add_service(fqdn);
 			}
 		}
 

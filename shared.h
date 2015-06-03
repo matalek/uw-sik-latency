@@ -74,6 +74,7 @@ enum service {
 	NONE
 };
 
+/*
 struct mdns_header {
 	uint16_t id;
 	uint16_t flags;
@@ -82,12 +83,13 @@ struct mdns_header {
 	uint16_t nscount;
 	uint16_t arcount;
 };
-
+*/
+/*
 struct ipv4_address {
 	uint32_t ttl;
 	uint32_t address; // host order
-};
-
+}; */
+/*
 mdns_header read_mdns_header(char buffer[], size_t& end) {
 	mdns_header res;
 
@@ -108,7 +110,7 @@ mdns_header read_mdns_header(char buffer[], size_t& end) {
 
 	end = 12;
 	return res;
-}
+} */
 
 
 
@@ -153,7 +155,7 @@ service which_my_service(vector<string>& fqdn, size_t start) {
 	return NONE;
 }
 
-
+/*
 ipv4_address read_ipv4_address(char buffer[], size_t& end) {
 	ipv4_address res;
 	uint32_t val;
@@ -166,6 +168,6 @@ ipv4_address read_ipv4_address(char buffer[], size_t& end) {
 
 	end += 10;
 	return res;
-}
+} */
 
 #endif
