@@ -21,6 +21,10 @@
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 
+// out of 80: 15 reserved for IP address and 17 (= 3*  5 + 2) for
+// printing data 
+#define FREE_SPACES 43
+
 class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 	public:
 		typedef boost::shared_ptr<tcp_connection> pointer;
@@ -38,17 +42,8 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			// will echo, will suppress go ahead
 			uint8_t message_[6] = {255, 251, 1, 255, 251, 3};
 
-			//~ lines.clear();
-			//~ for (int i = 0; i < 30; i++) {
-				//~ std::ostringstream oss;
-				//~ oss << "linia " << i;
-				//~ cout << oss.str() << "\n";
-				//~ lines.push_back(oss.str());
-			//~ }
-
 			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this));
 
-			
 			boost::asio::async_write(socket_, boost::asio::buffer(message_),
 				boost::bind(&tcp_connection::handle_start, shared_from_this(),
 				boost::asio::placeholders::error,
@@ -59,25 +54,52 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			lines.clear();
 			for (auto it = computers.begin(); it != computers.end(); it++) {
 				std::ostringstream oss;
-				oss << it->second->get_address_string() << " " << it->second->get_udp_average()
-					<< " " << it->second->get_tcp_average()
-					<< " " << it->second->get_icmp_average();
-				lines.push_back(oss.str());
+
+				uint32_t avg[] = {it->second->get_udp_average(),
+					it->second->get_tcp_average(),
+					it->second->get_icmp_average()};
+
+				uint32_t sum = 0;
+				uint8_t cnt = 0;
+
+				for (int i = 0; i < 3; i++)
+					if (avg[i]) {
+						sum += avg[i];
+						cnt++;
+					}
+					
+				uint8_t spaces;
+				uint32_t avg_avg = MAX_DELAY * 1000;
+				if (cnt) {
+					avg_avg = sum / cnt;
+					spaces =  static_cast<uint8_t>((avg_avg * FREE_SPACES)/ (MAX_DELAY * 1000));
+				} else
+					spaces = FREE_SPACES;
+				
+				oss << it->second->get_address_string();
+
+				for (uint8_t i = 0; i < spaces; i++)
+					oss << " ";
+				
+				oss << avg[0] << " " << avg[1] << " " << avg[2];
+				lines.push_back(make_pair(avg_avg, oss.str()));
 			}
 			write_lines();
 			
 		}
 
 	private:
-
+		
 		void write_lines() {
 			message_ = "\033[2J\033[0;0H"; // clean console
 			unsigned int end = lines.size();
 			if (start_line + MAX_LINES < end)
 				end = start_line + MAX_LINES;
+
+			sort(lines.begin(), lines.end());
 			
 			for (unsigned int i = start_line; i < end; i++)
-				message_ += lines[i] + ((i != end - 1) ? "\n\r" : "");
+				message_ += lines[i].second + ((i != end - 1) ? "\n\r" : "");
 
 			boost::shared_ptr<std::string> message_to_send(new std::string(message_));
 			
@@ -154,7 +176,7 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 		boost::asio::streambuf response_;
 		boost::asio::deadline_timer timer_;
 
-		vector<string> lines;
+		vector<pair <uint32_t, string> > lines;
 		unsigned int start_line;
 };
 
