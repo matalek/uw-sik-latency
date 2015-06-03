@@ -105,7 +105,7 @@ class mdns_answer {
 		unsigned char rep_[10];
 };
 
-struct ipv4_address {
+class ipv4_address {
 
 	public:
 

@@ -176,7 +176,9 @@ class mdns_server
 				deb(cout << fqdn[0] << " " << fqdn[1] << " " << fqdn[2] << " " << fqdn[2] << " " <<  "\n";)
 
 				// FQDN specified by a list of component strings
-				for (size_t i = 0; i < fqdn.size(); i++) {
+				// in PTR we do not add full name, but the same name of
+				// service, as in query
+				for (size_t i = ((type_ == dns_type::PTR) ? 1 : 0); i < fqdn.size(); i++) {
 					cout << "!!!" << fqdn[i].length() << " " << fqdn[i] << "\n";
 					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
 					oss << len << fqdn[i];
@@ -198,7 +200,7 @@ class mdns_server
 				mdns_answer_.class_(0x8001);
 				mdns_answer_.ttl(20); // TO CHANGE, signed???
 
-				mdns_answer_.length(4);
+				//~ mdns_answer_.length(4);
 				
 
 				// IPv4 address record
@@ -212,12 +214,19 @@ class mdns_server
 				buffers.push_back(boost::asio::buffer(*length));
 
 				*/
-
-				ipv4_address address_;
-				address_.address(ntohl(my_address)); // może ogólnie zmienić
 				
-				oss << mdns_answer_;
-				oss << address_;
+				if (type_ == dns_type::A) {
+					mdns_answer_.length(4);
+					ipv4_address address_;
+					address_.address(ntohl(my_address)); // może ogólnie zmienić
+					oss << mdns_answer_;
+					oss << address_;
+				} else { // PTR
+					mdns_answer_.length(my_name.length());
+					oss << mdns_answer_;
+					oss << my_name;
+				}
+				
 
 				//~ boost::shared_ptr<vector<uint32_t> > add(new vector<uint32_t>{my_address});
 				//~ buffers.push_back(boost::asio::buffer(*add));
