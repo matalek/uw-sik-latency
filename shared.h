@@ -74,72 +74,6 @@ enum service {
 	NONE
 };
 
-/*
-struct mdns_header {
-	uint16_t id;
-	uint16_t flags;
-	uint16_t qdcount;
-	uint16_t ancount;
-	uint16_t nscount;
-	uint16_t arcount;
-};
-*/
-/*
-struct ipv4_address {
-	uint32_t ttl;
-	uint32_t address; // host order
-}; */
-/*
-mdns_header read_mdns_header(char buffer[], size_t& end) {
-	mdns_header res;
-
-	uint16_t val;
-	
-	memcpy((char *)&val, buffer, 2);
-	res.id = ntohs(val);
-	memcpy((char *)&val, buffer + 2, 2);
-	res.flags = ntohs(val);
-	memcpy((char *)&val, buffer + 4, 2);
-	res.qdcount = ntohs(val);
-	memcpy((char *)&val, buffer + 6, 2);
-	res.ancount = ntohs(val);
-	memcpy((char *)&val, buffer + 8, 2);
-	res.nscount = ntohs(val);
-	memcpy((char *)&val, buffer + 10, 2);
-	res.arcount = ntohs(val);
-
-	end = 12;
-	return res;
-} */
-
-
-
-vector<string> read_fqdn(char buffer[], uint16_t& type_, uint16_t& class_, size_t& start) {
-	vector<string> res;
-
-	while (true) {
-		uint8_t len;
-		memcpy((char *)&len, buffer + start, 1);
-
-		if (!len)
-			break;
-		char name[len + 1];
-		memcpy(name, buffer + start + 1, len);
-		name[len] = 0;
-		start += len + 1;
-		res.push_back(name);
-		deb(std::cout << "imie: " << name << "\n";)
-	}
-	start++;
-	memcpy((char *)&type_, buffer + start, 2);
-	type_ = ntohs(type_);
-	start += 2;
-	memcpy((char *)&class_, buffer + start, 2);
-	class_ = ntohs(class_);
-	start += 2;
-	
-	return res;
-}
 
 service which_my_service(vector<string>& fqdn, size_t start) {
 	if (start + 2 < fqdn.size() &&
@@ -155,19 +89,5 @@ service which_my_service(vector<string>& fqdn, size_t start) {
 	return NONE;
 }
 
-/*
-ipv4_address read_ipv4_address(char buffer[], size_t& end) {
-	ipv4_address res;
-	uint32_t val;
-	
-	memcpy((char *)&val, buffer + end, 4);
-	res.ttl = ntohl(val);
-	// we ommit length - in IPv4 it is known 
-	memcpy((char *)&val, buffer + end + 6, 4);
-	res.address = ntohl(val);
-
-	end += 10;
-	return res;
-} */
 
 #endif

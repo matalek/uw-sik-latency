@@ -72,14 +72,19 @@ class mdns_answer {
 		void ttl(unsigned long n) { return encode(4, 5, 6, 7, n); }
 		void length(unsigned short n) { return encode(8, 9, n); }
 		
-		friend std::istream& operator>>(std::istream& is, mdns_answer& answer) {
-			return is.read(reinterpret_cast<char*>(answer.rep_), 10);
-		}
+		//~ friend std::istream& operator>>(std::istream& is, mdns_answer& answer) {
+			//~ return is.read(reinterpret_cast<char*>(answer.rep_), 10);
+		//~ }
 
 		friend std::ostream& operator<<(std::ostream& os, const mdns_answer & answer) {
 			return os.write(reinterpret_cast<const char*>(answer.rep_), 10);
 		}
-		
+
+		void read(char buffer[], size_t& start) {
+			for (size_t i = 0; i < 10; i++)
+				rep_[i] = buffer[i + start];
+			start += 10;
+		}
 
 	private:
 		unsigned short decode(int a, int b) const {
@@ -120,7 +125,12 @@ class mdns_query_end {
 		friend std::ostream& operator<<(std::ostream& os, const mdns_query_end & end) {
 			return os.write(reinterpret_cast<const char*>(end.rep_), 4);
 		}
-		
+
+		void read(char buffer[], size_t& start) {
+			for (size_t i = 0; i < 4; i++)
+				rep_[i] = buffer[i + start];
+			start += 4;
+		}
 
 	private:
 		unsigned short decode(int a, int b) const {
@@ -149,9 +159,10 @@ class ipv4_address {
 			return os.write(reinterpret_cast<const char*>(add.rep_), 4);
 		}
 
-		void read(char buffer[], size_t start) {
+		void read(char buffer[], size_t& start) {
 			for (size_t i = 0; i < 4; i++)
 				rep_[i] = buffer[i + start];
+			start += 4;
 		}
 
 	private:
@@ -172,5 +183,24 @@ class ipv4_address {
 		
 		unsigned char rep_[4];
 };
+
+vector<string> read_name(char buffer[], size_t& start) {
+	vector<string> res;
+
+	while (true) {
+		uint8_t len = buffer[start++];
+		
+		if (!len)
+			break;
+		char name[len + 1];
+		memcpy(name, buffer + start, len);
+		name[len] = 0;
+		start += len;
+		res.push_back(name);
+		deb(std::cout << "imie: " << name << "\n";)
+	}
+	
+	return res;
+}
 
 #endif

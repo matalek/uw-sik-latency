@@ -66,41 +66,37 @@ class mdns_server
 				ss << recv_buffer_;
 				mdns_header mdns_header_;
 				mdns_header_.read(recv_buffer_);
+				end = 12; // we have read 12 bytes so far
 				
-				end = 12;
-				uint16_t type_ = 0, class_ = 0;
-				vector<string> fqdn = read_fqdn(recv_buffer_, type_, class_, end);
-
-
+				vector<string> qname = read_name(recv_buffer_, end);
+				
 				// at first: not compressed
 
 				service service_;
-				// answering query
-				deb(cout << "type: " << static_cast<int>(type_) << static_cast<int>(mdns_header_.flags()) << "\n";)
-				if (mdns_header_.flags() == 0) {
+				if (mdns_header_.qdcount() > 0) {
+					// answering query
+					mdns_query_end mdns_query_end_;
+					mdns_query_end_.read(recv_buffer_, end);
 					
-					
-					if (type_ == dns_type::A) {
-						if (fqdn[0] == my_name && (service_ = which_my_service(fqdn, 1)) != NONE ) {
+					if (mdns_query_end_.type() == dns_type::A) {
+						if (qname[0] == my_name && (service_ = which_my_service(qname, 1)) != NONE ) {
 							send_response(dns_type::A, service_);
 						}
-					} else if (type_ == dns_type::PTR) {
-						if ((service_ = which_my_service(fqdn, 0)) != NONE ) {
+					} else if (mdns_query_end_.type() == dns_type::PTR) {
+						if ((service_ = which_my_service(qname, 0)) != NONE ) {
 							send_response(dns_type::PTR, service_);
 						}
 					}
-				} else if (mdns_header_.flags() == RESPONSE_FLAG) {
+				} else if (mdns_header_.ancount() > 0) {
 					// handling response to query
-					deb(cout << "response type: " << static_cast<int>(type_);)
-					if (type_ == dns_type::A) {
-						handle_a_response(fqdn, end);
-						
-					} else if (type_ == dns_type::PTR) {
+					mdns_answer mdns_answer_;
+					mdns_answer_.read(recv_buffer_, end);
+					
+					if (mdns_answer_.type() == dns_type::A) {
+						handle_a_response(mdns_answer_, qname, end);
+					} else if (mdns_answer_.type() == dns_type::PTR) {
 						// sending query for IP
-						handle_ptr_response(fqdn, end);
-						//~ if ((service_ = which_my_service(fqdn, 0)) != NONE ) {
-							//~ send_response(dns_type::PTR, service_);
-						//~ }
+						handle_ptr_response(mdns_answer_, qname, end);
 					}
 
 				}
@@ -195,24 +191,24 @@ class mdns_server
 			}
 		}
 
-		void handle_ptr_response(vector<string> question, size_t start) {
+		void handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
 			// nie wiem do końca, póki co interesuje mnie tylko nazwa
-			start += 6; //TTL & length
-			vector<string> fqdn = read_fqdn(recv_buffer_, start)
+			//TTL & length
+			vector<string> fqdn = read_name(recv_buffer_, start);
 			mdns_client_->send_query(dns_type::A, fqdn);
 		}
 
-		void handle_a_response(vector<string> fqdn, size_t start) {
+		void handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
 			// getting IP address
 			ipv4_address address;
-			address.read(recv_buffer_, start + 6); // where TTL and length?
+			address.read(recv_buffer_, start); // where TTL and length?
 			// if not already existing, creating new computer
 			if (!computers.count(address.address())) {
-				boost::shared_ptr<computer> comp(new computer(address.address(), fqdn));
+				boost::shared_ptr<computer> comp(new computer(address.address(), qname));
 				computers.insert(make_pair(address.address(), comp));
 			} else {
-				// maybe we need to another service
-				computers[address.address()]->add_service(fqdn);
+				// maybe we need to update another service
+				computers[address.address()]->add_service(qname);
 			}
 		}
 
