@@ -135,8 +135,8 @@ class mdns_query_end {
 		unsigned char rep_[4];
 };
 
-struct ipv4_address {
-
+class ipv4_address {
+	
 	public:
 
 		ipv4_address() { std::fill(rep_, rep_ + sizeof(rep_), 0); };
