@@ -171,6 +171,17 @@ int main(int argc, char *argv[]) {
 		// creating thread for mDNS sever
 		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
 
+		boost::system::error_code ec;
+		socket_mdns = new udp::socket(*io_service);
+		socket_mdns->open(udp::v4());
+		socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
+		socket_mdns->set_option(boost::asio::ip::multicast::enable_loopback(false));
+
+		boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
+		socket_mdns->set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
+		
+		socket_mdns->bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
+		
 		mdns_client_ = new mdns_client();
 		name_server_ = new name_server{};
 		mdns_server_ = new mdns_server();

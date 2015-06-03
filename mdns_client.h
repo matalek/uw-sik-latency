@@ -33,11 +33,12 @@ using namespace std;
 class mdns_client {
 	public:
 
-		mdns_client() : socket_(*io_service), timer_(*io_service, boost::posix_time::seconds(exploration_time)) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
-			boost::system::error_code ec;
-			socket_.open(udp::v4());
-			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
-			//~ socket_.bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
+		mdns_client() : //socket_(*io_service),
+		timer_(*io_service, boost::posix_time::seconds(exploration_time)) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+			//~ boost::system::error_code ec;
+			//~ socket_mdns->open(udp::v4());
+			//~ socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
+			//~ socket_mdns->bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
 			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
 		}
 
@@ -82,7 +83,7 @@ class mdns_client {
 
 				boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				
-				socket_.async_send_to(
+				socket_mdns->async_send_to(
 				//~ buffers,
 				boost::asio::buffer(*message),
 				 receiver_endpoint,
@@ -116,7 +117,7 @@ class mdns_client {
 			deb(cout << "wysłano!!!\n";)
 		}
 
-		udp::socket socket_;
+		//~ udp::socket socket_;
 		boost::asio::deadline_timer timer_;
 		
 

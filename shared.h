@@ -64,7 +64,7 @@ uint32_t my_address; // BE order
 string my_address_str;
 
 boost::asio::io_service* io_service;
-
+udp::socket* socket_mdns;
 
 enum dns_type {
 	A = 1,

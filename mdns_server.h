@@ -35,18 +35,19 @@ class mdns_server
 {
 	public:
 		mdns_server() //boost::asio::io_service& io_service)
-		: socket_(*io_service), udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+		//~ : socket_(*io_service), udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+			{
 			 
-			boost::system::error_code ec;
-			//~ socket_.open(udp::v4());
+			//~ boost::system::error_code ec;
+			//~ socket_mdns->open(udp::v4());
 			
-			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
-			socket_.set_option(boost::asio::ip::multicast::enable_loopback(false));
+			//~ socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
+			//~ socket_mdns->set_option(boost::asio::ip::multicast::enable_loopback(false));
 
-			boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
-			socket_.set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
+			//~ boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
+			//~ socket_mdns->set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
 
-			//~ socket_.bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
+			//~ socket_mdns->bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
 
 			start_receive();
 		}
@@ -54,7 +55,7 @@ class mdns_server
 	private:
 		void start_receive() {
 			deb(cout << "czekam...\n";)
-			socket_.async_receive_from(
+			socket_mdns->async_receive_from(
 				boost::asio::buffer(recv_buffer_), remote_endpoint_,
 				boost::bind(&mdns_server::handle_receive, this,
 				boost::asio::placeholders::error,
@@ -84,9 +85,9 @@ class mdns_server
 					mdns_query_end mdns_query_end_;
 					mdns_query_end_.read(recv_buffer_, end);
 					// when our name is not set, we want to answer A queries
-					// in order to avoid endless loop 
+					// in order to avoid giving the same names
 					if (mdns_query_end_.type() == dns_type::A) {
-						if (NAME_IS_SET && qname[0] == my_name && (service_ = which_my_service(qname, 1)) != NONE ) {
+						if (qname[0] == my_name && (service_ = which_my_service(qname, 1)) != NONE ) {
 							send_response(dns_type::A, service_);
 						}
 					} else if (mdns_query_end_.type() == dns_type::PTR) {
@@ -187,7 +188,7 @@ class mdns_server
 
 				boost::shared_ptr<std::string> message(new std::string(oss.str()));
 
-				socket_.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
+				socket_mdns->async_send_to(boost::asio::buffer(*message), receiver_endpoint,
 				  boost::bind(&mdns_server::handle_send, this,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
@@ -234,7 +235,6 @@ class mdns_server
 		{
 		}
 
-		udp::socket socket_;
 		udp::endpoint remote_endpoint_;
 		char recv_buffer_[BUFFER_SIZE];
 		
