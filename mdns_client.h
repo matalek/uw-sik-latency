@@ -35,8 +35,9 @@ class mdns_client {
 
 		mdns_client() : socket_(*io_service), timer_(*io_service, boost::posix_time::seconds(exploration_time)) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
 			boost::system::error_code ec;
-			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
 			socket_.open(udp::v4());
+			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
+			//~ socket_.bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
 			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
 		}
 

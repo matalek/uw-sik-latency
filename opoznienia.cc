@@ -95,7 +95,7 @@ void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffer
 	buffers.push_back(boost::asio::buffer(&body.address_, sizeof(body.address_)));
 }
 
-void set_name() {
+void set_candidate_name() {
 	// dodać obsługę błędu
 	char hostname[HOSTNAME_SIZE];
 	gethostname(hostname, HOSTNAME_SIZE);
@@ -145,9 +145,9 @@ int main(int argc, char *argv[]) {
 	get_address();
 	deb(cout << "Adres ip: " << my_address << "\n";)
 
-	set_name();
-
 	mdns_server* mdns_server_;
+
+	set_candidate_name();
 	
 	try {
 		//~ boost::asio::io_service io_service;
@@ -172,9 +172,11 @@ int main(int argc, char *argv[]) {
 		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
 
 		mdns_client_ = new mdns_client();
+		name_server_ = new name_server{};
 		mdns_server_ = new mdns_server();
 
 		measurement_server measurement_server{};
+		
 
 		//~ vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
 		//~ fqdn[0] = "_opoznienia";

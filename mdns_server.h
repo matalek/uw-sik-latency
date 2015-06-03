@@ -23,24 +23,30 @@
 #include "mdns_client.h"
 #include "computer.h"
 #include "mdns_fields.h"
+#include "name_server.hpp"
 
 using namespace std;
 
-mdns_client* mdns_client_;
+
+name_server* name_server_;
 map<uint32_t, boost::shared_ptr<computer> > computers; // identify by IPv4 address
 
 class mdns_server
 {
 	public:
 		mdns_server() //boost::asio::io_service& io_service)
-		: socket_(*io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
-			
+		: socket_(*io_service), udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
+			 
 			boost::system::error_code ec;
+			//~ socket_.open(udp::v4());
+			
 			socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
 			socket_.set_option(boost::asio::ip::multicast::enable_loopback(false));
-			
+
 			boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
 			socket_.set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
+
+			//~ socket_.bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
 
 			start_receive();
 		}
@@ -77,13 +83,14 @@ class mdns_server
 					// answering query
 					mdns_query_end mdns_query_end_;
 					mdns_query_end_.read(recv_buffer_, end);
-					
+					// when our name is not set, we want to answer A queries
+					// in order to avoid endless loop 
 					if (mdns_query_end_.type() == dns_type::A) {
-						if (qname[0] == my_name && (service_ = which_my_service(qname, 1)) != NONE ) {
+						if (NAME_IS_SET && qname[0] == my_name && (service_ = which_my_service(qname, 1)) != NONE ) {
 							send_response(dns_type::A, service_);
 						}
 					} else if (mdns_query_end_.type() == dns_type::PTR) {
-						if ((service_ = which_my_service(qname, 0)) != NONE ) {
+						if (NAME_IS_SET && (service_ = which_my_service(qname, 0)) != NONE ) {
 							send_response(dns_type::PTR, service_);
 						}
 					}
@@ -199,6 +206,15 @@ class mdns_server
 		}
 
 		void handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
+
+			if (!NAME_IS_SET) {
+				vector<string> name1 = {my_name,  "_opoznienia", "_udp", "_local"};
+				vector<string> name2 = {my_name,  "_ssh", "_tcp", "_local"};
+				
+				if (qname == name1 || qname == name2)
+					name_server_->notify();
+			}
+			
 			// getting IP address
 			ipv4_address address;
 			address.read(recv_buffer_, start); // where TTL and length?

@@ -38,9 +38,12 @@ using boost::asio::ip::icmp;
 uint16_t udp_port_num = 3382; // configured by -u option
 uint16_t ui_port_num = 3637; // configured by -U option
 double measurement_time = 1.; // configured by -t option
-double exploration_time = 1.; // configured by -T option
+double exploration_time = 10.; // configured by -T option
 double ui_refresh_time = 1; // configured by -v option
 bool ssh_service; // configured by -s option
+
+bool NAME_IS_SET = false;
+#define MAX_DELAY 5 // to change
 
 #define MDNS_PORT_NUM 5353
 #define SSH_PORT_NUM 22
