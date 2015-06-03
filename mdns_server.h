@@ -64,28 +64,8 @@ class mdns_server
 				
 				stringstream ss;
 				ss << recv_buffer_;
-				mdns_header mdns_header_; // = read_mdns_header(recv_buffer_, end);
-				//~ ss >> mdns_header_;
+				mdns_header mdns_header_;
 				mdns_header_.read(recv_buffer_);
-		
-				deb(cout << "odczytałem nagłówek \n";)
-				deb(cout << "type: " << static_cast<int>(mdns_header_.id()) << " " <<
-				static_cast<int>(mdns_header_.flags()) << " " <<
-				static_cast<int>(mdns_header_.qdcount()) << " " <<
-				static_cast<int>(mdns_header_.ancount()) << " " <<
-				static_cast<int>(mdns_header_.nscount()) << " " <<
-				static_cast<int>(mdns_header_.arcount()) << " " << "\n";)
-				for (int i = 0; i < 12; i++)
-					cout << static_cast<int>(recv_buffer_[i]) << " ";
-				cout << "\n";
-				deb(mdns_header_.pisz();)
-				/*
-				deb(cout << "pałowo: " << static_cast<int>(mdns_header_.id()) << " " <<
-				static_cast<int>(recv_buffer_[2]) << " " <<
-				static_cast<int>((recv_buffer_[3]) ) << " " <<
-				static_cast<int>(recv_buffer_[4]) << " " <<
-				static_cast<int>(recv_buffer_[5]) << " " <<
-				static_cast<int>(recv_buffer_[6]) << " " << "\n";) */
 				
 				end = 12;
 				uint16_t type_ = 0, class_ = 0;
@@ -125,14 +105,6 @@ class mdns_server
 
 				}
 				
-				/*
-				boost::shared_ptr<std::string> message(new std::string(make_daytime_string()));
-
-				socket_.async_send_to(boost::asio::buffer(*message), remote_endpoint_,
-				  boost::bind(&mdns_server::handle_send, this, message,
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred));
-				*/
 				start_receive();
 			}
 		}
@@ -158,8 +130,6 @@ class mdns_server
 				mdns_header_.arcount(0);
 				oss << mdns_header_;
 				
-				//~ boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, htons(RESPONSE_FLAG), 0, htons(1), 0, 0});
-				//~ buffers.push_back(boost::asio::buffer(*header));
 
 				// crete FQDN appropriate for this service
 				
@@ -190,36 +160,15 @@ class mdns_server
 				// terminating FQDN with null byte
 				oss << static_cast<uint8_t>(0);
 				ss_fqdn << static_cast<uint8_t>(0);
-				
-				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
-				//~ buffers.push_back(boost::asio::buffer(*message));
-				deb(cout << "___" << oss.str() << "\n";)
 
-				
-				//~ boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
-				//~ buffers.push_back(boost::asio::buffer(*null_byte));
 
 				mdns_answer mdns_answer_;
 				mdns_answer_.type(type_);
 				mdns_answer_.class_(0x8001);
 				mdns_answer_.ttl(20); // TO CHANGE, signed???
-
-				//~ mdns_answer_.length(4);
-				
-
-				// IPv4 address record
-				/*boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_ ), htons(0x8001)});
-				buffers.push_back(boost::asio::buffer(*type_class));
-
-				boost::shared_ptr<vector<uint32_t> > ttl(new vector<uint32_t>{htonl(20)});
-				buffers.push_back(boost::asio::buffer(*ttl));
-
-				boost::shared_ptr<vector<uint16_t> > length(new vector<uint16_t>{htons(4)});
-				buffers.push_back(boost::asio::buffer(*length));
-
-				*/
 				
 				if (type_ == dns_type::A) {
+					// IPv4 address record
 					mdns_answer_.length(4);
 					ipv4_address address_;
 					address_.address(ntohl(my_address)); // może ogólnie zmienić
@@ -231,14 +180,10 @@ class mdns_server
 					oss << mdns_answer_;
 					oss << (ss_fqdn.str());
 				}
-				
 
-				//~ boost::shared_ptr<vector<uint32_t> > add(new vector<uint32_t>{my_address});
-				//~ buffers.push_back(boost::asio::buffer(*add));
 
 				boost::shared_ptr<std::string> message(new std::string(oss.str()));
-				
-				//~ socket_.async_send_to( buffers, receiver_endpoint,
+
 				socket_.async_send_to(boost::asio::buffer(*message), receiver_endpoint,
 				  boost::bind(&mdns_server::handle_send, this,
 					boost::asio::placeholders::error,

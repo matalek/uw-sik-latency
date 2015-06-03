@@ -62,12 +62,6 @@ class mdns_client {
 				mdns_header_.nscount(0);
 				mdns_header_.arcount(0);
 				oss << mdns_header_;
-				//~ boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, 0, htons(1), 0, 0, 0});
-				//~ buffers.push_back(boost::asio::buffer(*header));
-
-				
-				//~ for (size_t i = 0; i < header.size(); i++)
-					//~ oss << header[i];
 
 				// FQDN specified by a list of component strings
 				for (size_t i = 0; i < fqdn.size(); i++) {
@@ -75,21 +69,15 @@ class mdns_client {
 					oss << len << fqdn[i];
 				}
 
-				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
-				//~ buffers.push_back(boost::asio::buffer(*message));
-
 				// terminating FQDN with null byte
 				oss << static_cast<uint8_t>(0);
-				//~ boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
-				//~ buffers.push_back(boost::asio::buffer(*null_byte));
-				
+
 				// QTYPE & QCLASS (00 01 for Internet)
 				mdns_query_end mdns_query_end_;
 				mdns_query_end_.type(type_);
 				mdns_query_end_.class_(1);
 				oss << mdns_query_end_;
-				//~ boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_), htons(1)});
-				//~ buffers.push_back(boost::asio::buffer(*type_class));
+
 
 				boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				
@@ -101,7 +89,6 @@ class mdns_client {
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
 
-				//~ deb(cout << "wysłano mdns" << oss.str() << "\n";)
 			}
 			catch (std::exception& e) {
 				std::cerr << e.what() << std::endl;
