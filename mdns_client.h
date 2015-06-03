@@ -22,6 +22,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include "shared.h"
+#include "mdns_fields.h"
 
 using boost::asio::ip::udp;
 
@@ -53,8 +54,16 @@ class mdns_client {
 				std::vector<boost::asio::const_buffer> buffers;
 				
 				// ID, Flags (0 for query), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
-				boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, 0, htons(1), 0, 0, 0});
-				buffers.push_back(boost::asio::buffer(*header));
+				mdns_header mdns_header_;
+				mdns_header_.id(0);
+				mdns_header_.flags(0);
+				mdns_header_.qdcount(1);
+				mdns_header_.ancount(0);
+				mdns_header_.nscount(0);
+				mdns_header_.arcount(0);
+				oss << mdns_header_;
+				//~ boost::shared_ptr<vector<uint16_t> > header(new vector<uint16_t>{0, 0, htons(1), 0, 0, 0});
+				//~ buffers.push_back(boost::asio::buffer(*header));
 
 				
 				//~ for (size_t i = 0; i < header.size(); i++)
@@ -66,20 +75,27 @@ class mdns_client {
 					oss << len << fqdn[i];
 				}
 
-				boost::shared_ptr<std::string> message(new std::string(oss.str()));
-				buffers.push_back(boost::asio::buffer(*message));
+				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				//~ buffers.push_back(boost::asio::buffer(*message));
 
 				// terminating FQDN with null byte
-				boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
-				buffers.push_back(boost::asio::buffer(*null_byte));
+				oss << static_cast<uint8_t>(0);
+				//~ boost::shared_ptr<vector<uint8_t> > null_byte(new vector<uint8_t>{0});
+				//~ buffers.push_back(boost::asio::buffer(*null_byte));
 				
 				// QTYPE & QCLASS (00 01 for Internet)
-				boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_), htons(1)});
-				buffers.push_back(boost::asio::buffer(*type_class));
+				mdns_query_end mdns_query_end_;
+				mdns_query_end_.type(type_);
+				mdns_query_end_.class_(1);
+				oss << mdns_query_end_;
+				//~ boost::shared_ptr<vector<uint16_t> > type_class(new vector<uint16_t>{htons(type_), htons(1)});
+				//~ buffers.push_back(boost::asio::buffer(*type_class));
 
+				boost::shared_ptr<std::string> message(new std::string(oss.str()));
+				
 				socket_.async_send_to(
-				buffers,
-				//~ boost::asio::buffer(*message),
+				//~ buffers,
+				boost::asio::buffer(*message),
 				 receiver_endpoint,
 				  boost::bind(&mdns_client::handle_send, this, //message,
 					boost::asio::placeholders::error,

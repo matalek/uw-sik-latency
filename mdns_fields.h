@@ -105,6 +105,36 @@ class mdns_answer {
 		unsigned char rep_[10];
 };
 
+class mdns_query_end {
+
+	public:
+
+		mdns_query_end() { std::fill(rep_, rep_ + sizeof(rep_), 0); };
+
+		unsigned short type() const { return decode(0, 1); }
+		unsigned short class_() const { return decode(2, 3); }
+
+		void type(unsigned short n) { return encode(0, 1, n); }
+		void class_(unsigned short n) { return encode(2, 3, n); }
+
+		friend std::ostream& operator<<(std::ostream& os, const mdns_query_end & end) {
+			return os.write(reinterpret_cast<const char*>(end.rep_), 4);
+		}
+		
+
+	private:
+		unsigned short decode(int a, int b) const {
+			return (rep_[a] << 8) + rep_[b];
+		}
+
+		void encode(int a, int b, unsigned short n) {
+			rep_[a] = static_cast<unsigned char>(n >> 8);
+			rep_[b] = static_cast<unsigned char>(n & 0xFF);
+		}
+		
+		unsigned char rep_[4];
+};
+
 struct ipv4_address {
 
 	public:
