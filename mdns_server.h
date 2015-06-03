@@ -178,14 +178,18 @@ class mdns_server
 				// FQDN specified by a list of component strings
 				// in PTR we do not add full name, but the same name of
 				// service, as in query
-				for (size_t i = ((type_ == dns_type::PTR) ? 1 : 0); i < fqdn.size(); i++) {
+				ostringstream ss_fqdn;
+				for (size_t i = 0; i < fqdn.size(); i++) {
 					cout << "!!!" << fqdn[i].length() << " " << fqdn[i] << "\n";
 					uint8_t len = static_cast<uint8_t>(fqdn[i].length());
-					oss << len << fqdn[i];
+					ss_fqdn << len << fqdn[i];
+					if ((type_ != dns_type::PTR) || i != 0)
+						oss << len << fqdn[i];
 				}
 
 				// terminating FQDN with null byte
 				oss << static_cast<uint8_t>(0);
+				ss_fqdn << static_cast<uint8_t>(0);
 				
 				//~ boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				//~ buffers.push_back(boost::asio::buffer(*message));
@@ -222,9 +226,10 @@ class mdns_server
 					oss << mdns_answer_;
 					oss << address_;
 				} else { // PTR
-					mdns_answer_.length(my_name.length());
+				
+					mdns_answer_.length(ss_fqdn.str().length());
 					oss << mdns_answer_;
-					oss << my_name;
+					oss << (ss_fqdn.str());
 				}
 				
 
@@ -245,8 +250,10 @@ class mdns_server
 			}
 		}
 
-		void handle_ptr_response(vector<string> fqdn, size_t start) {
+		void handle_ptr_response(vector<string> question, size_t start) {
 			// nie wiem do końca, póki co interesuje mnie tylko nazwa
+			start += 6; //TTL & length
+			vector<string> fqdn = read_fqdn(recv_buffer_, start)
 			mdns_client_->send_query(dns_type::A, fqdn);
 		}
 
