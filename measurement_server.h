@@ -19,12 +19,10 @@ class measurement_server {
 			for (auto it = computers.begin(); it != computers.end(); it++) {
 				if (it->second->verify_ttl())
 					it->second->measure();
-				else {
+				else
 					// delete computer, because its TTLs for services
 					// have expired
-					auto it2 = it++;
-					computers.erase(it2);
-				}
+					computers.erase(it++);
 			}
 			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(measurement_time));
 			timer_.async_wait(boost::bind(&measurement_server::measure, this));

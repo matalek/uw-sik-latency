@@ -38,7 +38,7 @@ void name_server::send_query() {
 	// not implement the whole chapter, it is necessera to include
 	// this random delay in implementation, so as to avoid conflicts
 	// (which were experimentaly confirmed to appear without
-	// implementing this feature.
+	// implementing this feature).
 
 	srand(time(NULL));
 	uint8_t	wait_time = rand() % 251;
