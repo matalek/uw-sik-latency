@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 	if (vm.count("-v"))
 		ui_refresh_time = vm["-v"].as<double>();
 	if (vm.count("-s"))
-		ssh_service = true;
+		announce_ssh_service = true;
 
 	// creating thread for UDP delay server
 	std::thread udp_delay_server_thread(udp_delay_server);

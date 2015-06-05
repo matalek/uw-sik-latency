@@ -16,7 +16,7 @@ mdns_server::mdns_server() {
 
 void mdns_server::announce_name() {
 	send_response(dns_type::A, service::UDP);
-	if (ssh_service)
+	if (announce_ssh_service)
 		send_response(dns_type::A, service::TCP);
 }
 

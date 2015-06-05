@@ -55,7 +55,7 @@ extern uint16_t ui_port_num; // configured by -U option
 extern double measurement_time; // configured by -t option
 extern double exploration_time; // configured by -T option
 extern double ui_refresh_time; // configured by -v option
-extern bool ssh_service; // configured by -s option
+extern bool announce_ssh_service; // configured by -s option
 
 extern bool NAME_IS_SET;
 

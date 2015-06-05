@@ -11,10 +11,12 @@ class computer : public boost::enable_shared_from_this<computer> {
 	public:
 		
 		computer(uint32_t add, vector<string>& fqdn) :
+			opoznienia_service(false),
+			ssh_service(false),
 			socket_udp(*io_service),
 			socket_tcp(*io_service),
 			socket_icmp(*io_service, icmp::v4()) { // czy nie lepiej jedno?
-				
+
 			address = add;
 			//~ ttl = add.ttl();
 			name = fqdn[0];
@@ -33,6 +35,8 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		void add_service(vector<string>& fqdn) {
+			deb(cout << "Komputer " << name << " " << address<< " serwis " << fqdn[1] << "\n";)
+			
 			if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "_local")
 				opoznienia_service = true;
 			
