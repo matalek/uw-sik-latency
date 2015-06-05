@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <time.h>
+
 #include "shared.h"
 #include "computer.h"
 #include "mdns_client.h"
@@ -8,7 +11,9 @@ mdns_client* mdns_client_;
 name_server* name_server_;
 
 
-name_server::name_server() : name(my_name), number(1), timer_(*io_service, boost::posix_time::seconds(MAX_DELAY)) {
+name_server::name_server() : name(my_name), number(1),
+	timer_(*io_service, boost::posix_time::seconds(MAX_DELAY)),
+	timer_probes(*io_service) {
 	send_query();
 }
 
@@ -28,6 +33,24 @@ void name_server::send_query() {
 
 	deb2(cout << "wysyłam zapytanie o nazwy " << my_name << "\n";)
 
+	// according to RFC 6762, chapter 8.1, we should wait for random
+	// number of milisecond (0 - 250) before probing. Although we do
+	// not implement the whole chapter, it is necessera to include
+	// this random delay in implementation, so as to avoid conflicts
+	// (which were experimentaly confirmed to appear without
+	// implementing this feature.
+
+	srand(time(NULL));
+	uint8_t	wait_time = rand() % 251;
+
+	timer_.expires_from_now(boost::posix_time::milliseconds(wait_time));
+		timer_.async_wait(boost::bind(&name_server::send_probes, this,
+		boost::asio::placeholders::error));
+}
+
+void name_server::send_probes(const boost::system::error_code &ec) {
+	deb2(cout << "wysyłam próbki\n";)
+	
 	// we want to have unique name as far as both services
 	// (opoznienia and ssh) are concerned, so we send a query for
 	// each of this service
@@ -43,6 +66,7 @@ void name_server::send_query() {
 }
 
 void name_server::success(const boost::system::error_code &ec) {
+	deb2(cout << "koniec timera\n";)
 	if (ec != boost::asio::error::operation_aborted) {
 		NAME_IS_SET = true;
 		// according to standard, we have to anounce, that this name

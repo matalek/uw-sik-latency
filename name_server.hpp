@@ -16,6 +16,8 @@ class name_server {
 
 	private:
 		void send_query();
+		
+		void send_probes(const boost::system::error_code &ec);
 
 		void success(const boost::system::error_code &ec);
 
@@ -24,8 +26,8 @@ class name_server {
 		int number;
 		
 		boost::asio::deadline_timer timer_;
+		boost::asio::deadline_timer timer_probes;
 
-		bool timer_waiting;
 };
 
 extern name_server* name_server_;
