@@ -3,8 +3,25 @@
  * sudo setcap cap_net_raw+eip ./opoznienia
  * in order to enable root previlages to create raw sockets.
  *
- * Additional assumption:
- * - program does not measure delays to localhost
+ * Additional assumptions:
+ * - program does not measure delays to localhost.
+ * - the computer on which the program is executed has only one
+ * interface: eth0, or routing is appropriately set so that programs
+ * could communicate on eth0 interface.
+ * - name is assigned to the computer, not to service, it is offering
+ * (names for opoznienia and ssh services should be equal).
+ * - because we send mDNS regularly, we will be caching records 
+ * for time to leave received in a response to A query (not PTR query).
+ * Therefore, we wil be ignoring TTL send in response to PTR query.
+ * It won't do us any harm, because, if TTL of PTR record were shorter
+ * than for A record, we wouldn't (due to program specification) send
+ * an additional A query. We would rather wait for an appropriate time
+ * and then send both PTR and (after receiving answer) A query and
+ * TTL time for PTR would be reset.
+ * - we set TTL for twice as sending mDNS queries frequency (approximately,
+ * because exploration time can be double value). Therefore, we also
+ * assume, that sending mDNS queries time would be resonable (at least
+ * one second).
  *
  */ 
 

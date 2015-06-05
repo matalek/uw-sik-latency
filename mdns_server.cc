@@ -133,8 +133,9 @@ void mdns_server::send_response(dns_type type_, service service_) {
 		mdns_answer mdns_answer_;
 		mdns_answer_.type(type_);
 		mdns_answer_.class_(0x8001);
-		mdns_answer_.ttl(20); // TO CHANGE, signed???
-		
+		// TTL equals twice as  sending mDNS queries frequency 
+		mdns_answer_.ttl(2 * static_cast<uint32_t>(exploration_time));
+				
 		if (type_ == dns_type::A) {
 			// IPv4 address record
 			mdns_answer_.length(4);
@@ -183,11 +184,11 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 	
 	// if not already existing, creating new computer
 	if (!computers.count(address.address())) {
-		boost::shared_ptr<computer> comp(new computer(address.address(), qname));
+		boost::shared_ptr<computer> comp(new computer(address.address(), qname, mdns_answer_.ttl()));
 		computers.insert(make_pair(address.address(), comp));
 	} else {
 		// maybe we need to update another service
-		computers[address.address()]->add_service(qname);
+		computers[address.address()]->add_service(qname, mdns_answer_.ttl());
 	}
 }
 

@@ -10,17 +10,18 @@
 class computer : public boost::enable_shared_from_this<computer> {
 	public:
 		
-		computer(uint32_t add, vector<string>& fqdn) :
+		computer(uint32_t add, vector<string>& fqdn, uint32_t ttl) :
 			opoznienia_service(false),
 			ssh_service(false),
+			leave_time_opoznienia(0),
+			leave_time_ssh(0),
 			socket_udp(*io_service),
 			socket_tcp(*io_service),
 			socket_icmp(*io_service, icmp::v4()) { // czy nie lepiej jedno?
 
 			address = add;
-			//~ ttl = add.ttl();
 			name = fqdn[0];
-			add_service(fqdn);
+			add_service(fqdn, ttl);
 			deb(cout << "Dodaję komputer " << name << " " << address<< "\n";)
 
 			// creating sockets for measurement
@@ -34,14 +35,18 @@ class computer : public boost::enable_shared_from_this<computer> {
 			remote_icmp_endpoint.address(boost::asio::ip::address_v4(address));
 		}
 
-		void add_service(vector<string>& fqdn) {
-			deb(cout << "Komputer " << name << " " << address<< " serwis " << fqdn[1] << "\n";)
+		void add_service(vector<string>& fqdn, uint32_t ttl) {
+			deb(cout << "Komputer " << name << " " << address<< " serwis " << fqdn[1] << " ttl:" << ttl << "\n";)
 			
-			if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "_local")
+			if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "_local") {
 				opoznienia_service = true;
+				leave_time_opoznienia = get_time() + static_cast<uint64_t>(ttl) * 1000000;
+			}
 			
-			if (fqdn.size() == 4 && fqdn[1] == "_ssh" && fqdn[2] == "_tcp" && fqdn[3] == "_local")
+			if (fqdn.size() == 4 && fqdn[1] == "_ssh" && fqdn[2] == "_tcp" && fqdn[3] == "_local") {
 				ssh_service = true;
+				leave_time_ssh = get_time() + static_cast<uint64_t>(ttl) * 1000000;
+			}
 		}
 
 		void measure() {
@@ -82,8 +87,17 @@ class computer : public boost::enable_shared_from_this<computer> {
 			return boost::asio::ip::address_v4(address).to_string();
 		}
 
-	private:
+		// returns, if any service is still valid for this computer
+		bool verify_ttl() {
+			uint64_t time = get_time();
+			if (time >= leave_time_opoznienia)
+				opoznienia_service = false;
+			if (time >= leave_time_ssh)
+				ssh_service = false;
+			return (opoznienia_service || ssh_service);
+		}
 
+	private:
 		// calculating current time
 		uint64_t get_time() {
 			struct timeval tv;
@@ -250,8 +264,8 @@ class computer : public boost::enable_shared_from_this<computer> {
 				&& (it = icmp_start_times.find(icmp_hdr.sequence_number())) != icmp_start_times.end()) {
 				
 				uint64_t res = get_time() - it->second;
-				it2 = it;
-				icmp_start_times.erase(it, ++it2);
+				it2 = it++;
+				icmp_start_times.erase(it2);
 				
 				deb(cout << "Wynik pomiaru icmp: " << res << "\n";)
 				
@@ -269,7 +283,9 @@ class computer : public boost::enable_shared_from_this<computer> {
 		bool opoznienia_service;
 		bool ssh_service; 
 		uint32_t address; // host order
-		uint32_t ttl;
+
+		uint64_t leave_time_opoznienia;
+		uint64_t leave_time_ssh;
 
 		udp::socket socket_udp;
 		udp::endpoint remote_udp_endpoint;
@@ -295,6 +311,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 		boost::asio::streambuf icmp_reply_buffer;
 		unsigned short sequence_number;
+		
 };
 
 
