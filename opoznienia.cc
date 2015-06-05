@@ -70,32 +70,84 @@ void set_candidate_name() {
 int main(int argc, char *argv[]) {
 	
 	// parsing arguments
-	namespace po = boost::program_options;
-	po::options_description desc("Dozwolone opcje");
-	desc.add_options()
-		(",u", po::value<int>(), "port serwera do pomiaru opóźnień przez UDP: 3382")
-		(",U", po::value<int>(), "port serwera do połączeń z interfejsem użytkownika: 3637")
-		(",t", po::value<double>(), "czas pomiędzy pomiarami opóźnień: 1 sekunda")
-		(",T", po::value<double>(), "czas pomiędzy wykrywaniem komputerów: 10 sekund")
-		(",v", po::value<double>(), "czas pomiędzy aktualizacjami interfejsu użytkownika: 1 sekunda")
-		(",s", "rozgłaszanie dostępu do usługi _ssh._tcp: domyślnie wyłączone");
+	int c;
+	opterr = 0;
 
-	po::variables_map vm;
-	po::store(po::parse_command_line(argc, argv, desc), vm);
-	po::notify(vm);    
+	while ((c = getopt (argc, argv, "u:U:t:T:v:s")) != -1)
+		switch (c) {
+			case 'u':
+			{
+				std::stringstream ss;
+				ss << optarg;
+				ss >> udp_port_num;
+				if (!ss.eof()) {
+					cerr << "Option -u requires an integer argument.\n";
+					return 1;
+				}
+			}
+				break;
+			case 'U':
+			{
+				std::stringstream ss;
+				ss << optarg;
+				ss >> ui_port_num;
+				if (!ss.eof()) {
+					cout << "Option -U requires an integer argument.\n";
+					return 1;
+				}
+			}
+				break;
+			case 't':
+			{
+				std::stringstream ss;
+				ss << optarg;
+				ss >> measurement_time;
+				if (!ss.eof()) {
+					cerr << "Option -t requires a double argument.\n";
+					return 1;
+				}
+			}
+				break;
+			case 'T':
+			{
+				std::stringstream ss;
+				ss << optarg;
+				ss >> exploration_time;
+				if (!ss.eof()) {
+					cerr << "Option -T requires a double argument.\n";
+					return 1;
+				}
+			}
+				break;
+			case 'v':
+			{
+				std::stringstream ss;
+				ss << optarg;
+				ss >> ui_refresh_time;
+				if (!ss.eof()) {
+					cerr << "Option -v requires a double argument.\n";
+					return 1;
+				}
+			}
+				break;
+			case 's':
+				announce_ssh_service = true;
+				break;
+			case '?':
+				if (optopt == 'u' || optopt == 'U' || optopt == 't' || optopt == 'T' || optopt == 'v')
+					cerr << "Option -" << (char)optopt << " requires an argument.\n";
+				else if (isprint (optopt))
+					cerr << "Unknown option `-" << (char)optopt << "'.\n";
+				else
+					cerr << "Unknown option character `\\x" << std::hex << optopt << "'.\n";
+				return 1;
+			default:
+				abort();
+		}
 
-	if (vm.count("-u"))
-		udp_port_num = vm["-u"].as<int>();
-	if (vm.count("-U"))
-		ui_port_num = vm["-U"].as<int>();
-	if (vm.count("-t"))
-		measurement_time = vm["-t"].as<double>();
-	if (vm.count("-T"))
-		exploration_time = vm["-T"].as<double>();
-	if (vm.count("-v"))
-		ui_refresh_time = vm["-v"].as<double>();
-	if (vm.count("-s"))
-		announce_ssh_service = true;
+	deb2(cout << udp_port_num << " " << ui_port_num << " " << measurement_time << " " << exploration_time << " " << ui_refresh_time
+		<< " " << static_cast<int>(announce_ssh_service) << "\n";)
+
 
 	// creating thread for UDP delay server
 	std::thread udp_delay_server_thread(udp_delay_server);

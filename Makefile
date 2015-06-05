@@ -2,7 +2,7 @@ TARGET: opoznienia
 
 CC = g++
 CPP = g++
-CPPFLAGS = -std=c++11 -Wall -lboost_system -lboost_program_options
+CPPFLAGS = -std=c++11 -Wall -lboost_system -lboost_program_options -lpthread
 
 OBJECTS = opoznienia.o mdns_server.o shared.o mdns_fields.o name_server.o
 
