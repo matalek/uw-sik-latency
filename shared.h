@@ -35,14 +35,14 @@ using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 using boost::asio::ip::icmp;
 
-uint16_t udp_port_num = 3382; // configured by -u option
-uint16_t ui_port_num = 3637; // configured by -U option
-double measurement_time = 1.; // configured by -t option
-double exploration_time = 10.; // configured by -T option
-double ui_refresh_time = 1; // configured by -v option
-bool ssh_service; // configured by -s option
+extern uint16_t udp_port_num; // configured by -u option
+extern uint16_t ui_port_num; // configured by -U option
+extern double measurement_time; // configured by -t option
+extern double exploration_time; // configured by -T option
+extern double ui_refresh_time; // configured by -v option
+extern bool ssh_service; // configured by -s option
 
-bool NAME_IS_SET = false;
+extern bool NAME_IS_SET;
 #define MAX_DELAY 5 // to change
 
 #define MDNS_PORT_NUM 5353
@@ -56,15 +56,16 @@ bool NAME_IS_SET = false;
 
 #define MY_INDEX "\0x34\0x71\0x71"
 
-#define deb(a) a
+#define deb(a)
+#define deb2(a) a
 
 //~ vector<string> my_name;
-string my_name;
-uint32_t my_address; // BE order
-string my_address_str;
+extern string my_name;
+extern uint32_t my_address; // BE order
+extern string my_address_str;
 
-boost::asio::io_service* io_service;
-udp::socket* socket_mdns;
+extern boost::asio::io_service* io_service;
+extern udp::socket* socket_mdns;
 
 enum dns_type {
 	A = 1,
@@ -78,19 +79,7 @@ enum service {
 };
 
 
-service which_my_service(vector<string>& fqdn, size_t start) {
-	if (start + 2 < fqdn.size() &&
-		fqdn[start] == "_opoznienia" &&
-		fqdn[start + 1] == "_udp" &&
-		fqdn[start + 2] == "_local")
-		return service::UDP;
-	if (ssh_service && start + 2 < fqdn.size() &&
-		fqdn[start] == "_ssh" &&
-		fqdn[start + 1] == "_tcp" &&
-		fqdn[start + 2] == "_local")
-		return service::TCP;
-	return NONE;
-}
+extern service which_my_service(vector<string>& fqdn, size_t start);
 
 
 #endif

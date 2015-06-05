@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 	get_address();
 	deb(cout << "Adres ip: " << my_address << "\n";)
 
-	mdns_server* mdns_server_;
+	
 
 	set_candidate_name();
 	

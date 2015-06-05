@@ -1,3 +1,6 @@
+#ifndef UDP_SERVER_H
+#define UDP_SERVER_H
+
 #include <iostream>
 #include <utility>
 #include <thread>
@@ -58,3 +61,5 @@ void udp_delay_server() {
 	}
 
 }
+
+#endif

@@ -14,8 +14,6 @@
 #include <sstream>
 #include <stdio.h>
 
-
-
 #include "shared.h"
 
 using boost::asio::ip::udp;

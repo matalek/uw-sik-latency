@@ -1,12 +1,20 @@
 TARGET: opoznienia
 
 CC = g++
-CXX = g++
+CPP = g++
 CPPFLAGS = -std=c++11 -Wall -lboost_system -lboost_program_options
 
-opoznienia: opoznienia.o
-	$(CXX) $^ -o $@ $(CPPFLAGS)
+OBJECTS = opoznienia.o mdns_server.o shared.o mdns_fields.o name_server.o
+
+$(OBJECTS): %.o: %.cc
+	$(CC) $< $(CPPFLAGS) -c
+
+opoznienia: opoznienia.o mdns_server.o shared.o mdns_fields.o name_server.o
+	$(CC) $^ -o $@ $(CPPFLAGS)
 
 .PHONY: clean TARGET
 clean:
 	rm -f opoznienia *.o *~ *.bak
+
+
+
