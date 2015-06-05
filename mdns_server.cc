@@ -9,15 +9,16 @@ using namespace std;
 
 map<uint32_t, boost::shared_ptr<computer> > computers;
 mdns_server* mdns_server_;
+mdns_unicast_server* mdns_unicast_server_;
 
 mdns_server::mdns_server() {
 	start_receive();
 }
 
 void mdns_server::announce_name() {
-	send_response(dns_type::A, service::UDP);
+	send_response(dns_type::A, service::UDP, false);
 	if (announce_ssh_service)
-		send_response(dns_type::A, service::TCP);
+		send_response(dns_type::A, service::TCP, false);
 }
 
 void mdns_server::start_receive() {
@@ -27,18 +28,9 @@ void mdns_server::start_receive() {
 		boost::bind(&mdns_server::handle_receive, this,
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
-
-	socket_mdns_unicast->async_receive_from(
-		boost::asio::buffer(recv_buffer_), remote_endpoint_,
-		boost::bind(&mdns_server::handle_unicast_receive, this,
-		boost::asio::placeholders::error,
-		boost::asio::placeholders::bytes_transferred));
 }
 
-void mdns_server::handle_unicast_receive(const boost::system::error_code& error,
-  std::size_t /*bytes_transferred*/) {
-	deb2(cout << "\nodebrałem zapytanie mDNS przez unicasta\n";)
-}
+
 
 void mdns_server::handle_receive(const boost::system::error_code& error,
   std::size_t /*bytes_transferred*/) {
@@ -50,59 +42,78 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 			start_receive();
 			return;
 		}
-
-		size_t end;
 		
-		stringstream ss;
-		ss << recv_buffer_;
-		mdns_header mdns_header_;
-		mdns_header_.read(recv_buffer_);
-		end = 12; // we have read 12 bytes so far
-		
-		vector<string> qname = read_name(recv_buffer_, end);
-		
-		// at first: not compressed
-
-		service service_;
-		if (mdns_header_.qdcount() > 0) {
-			// answering query
-			mdns_query_end mdns_query_end_;
-			mdns_query_end_.read(recv_buffer_, end);
-			
-			// when our name is not set, we do not want to
-			// be visible for network
-			if (NAME_IS_SET) {
-				if (mdns_query_end_.type() == dns_type::A) {
-					if (qname[0] == my_name && (service_ = which_my_service(qname, 1)) != service::NONE) {
-						send_response(dns_type::A, service_);
-					}
-				} else if (mdns_query_end_.type() == dns_type::PTR) {
-					if ((service_ = which_my_service(qname, 0)) != service::NONE) {
-						send_response(dns_type::PTR, service_);
-					}
-				}
-			}
-		} else if (mdns_header_.ancount() > 0) {
-			// handling response to query
-			mdns_answer mdns_answer_;
-			mdns_answer_.read(recv_buffer_, end);
-			if (mdns_answer_.type() == dns_type::A) {
-				handle_a_response(mdns_answer_, qname, end);
-			} else if (mdns_answer_.type() == dns_type::PTR) {
-				handle_ptr_response(mdns_answer_, qname, end);
-			}
-		}
+		receive_universal(recv_buffer_, false);
 		
 		start_receive();
 	}
 }
 
-// sending response via multicast
-void mdns_server::send_response(dns_type type_, service service_) {
+void mdns_server::receive_universal(char* buffer, bool via_unicast) {
+	size_t end;
+	
+	stringstream ss;
+	ss << recv_buffer_;
+	mdns_header mdns_header_;
+	mdns_header_.read(buffer);
+	end = 12; // we have read 12 bytes so far
+	
+	vector<string> qname = read_name(buffer, end);
+	
+	// at first: not compressed
+
+	service service_;
+	if (mdns_header_.qdcount() > 0) {
+		// answering query
+		mdns_query_end mdns_query_end_;
+		mdns_query_end_.read(buffer, end);
+
+		// check if QU bit in query's class was set. If yes (or if we
+		// received query via unicast), we will send respone via unicast.
+		bool send_via_unicast = via_unicast;
+		if ((mdns_query_end_.class_() && 0xA000) >> 15) {
+			send_via_unicast = true;
+			receiver_address = remote_endpoint_.address();
+		}
+
+		deb2(if (send_via_unicast)
+			cout << "wysyłam przez unicast\n";)
+		
+		// when our name is not set, we do not want to
+		// be visible for network
+		if (NAME_IS_SET) {
+			if (mdns_query_end_.type() == dns_type::A) {
+				if (qname[0] == my_name && (service_ = which_my_service(qname, 1)) != service::NONE) {
+					send_response(dns_type::A, service_, send_via_unicast);
+				}
+			} else if (mdns_query_end_.type() == dns_type::PTR) {
+				if ((service_ = which_my_service(qname, 0)) != service::NONE) {
+					send_response(dns_type::PTR, service_, send_via_unicast);
+				}
+			}
+		}
+	// we haven't send any queries via unicast, so we ignore replies
+	// via unicast
+	} else if (mdns_header_.ancount() > 0 && !via_unicast) {
+		// handling response to query
+		mdns_answer mdns_answer_;
+		mdns_answer_.read(recv_buffer_, end);
+		if (mdns_answer_.type() == dns_type::A) {
+			handle_a_response(mdns_answer_, qname, end);
+		} else if (mdns_answer_.type() == dns_type::PTR) {
+			handle_ptr_response(mdns_answer_, qname, end);
+		}
+	}	
+}
+
+void mdns_server::send_response(dns_type type_, service service_, bool send_via_unicast) {
 	deb(cout << "zaczynam wysyłać odpowiedź na mdns\n";)
 	try {
 		udp::endpoint receiver_endpoint;
-		receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
+		if (send_via_unicast)
+			receiver_endpoint.address(receiver_address);
+		else
+			receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
 		receiver_endpoint.port(MDNS_PORT_NUM);
 
 		std::ostringstream oss;
@@ -145,7 +156,6 @@ void mdns_server::send_response(dns_type type_, service service_) {
 		// terminating FQDN and QNAME with null byte
 		oss << static_cast<uint8_t>(0);
 		oss_fqdn << static_cast<uint8_t>(0);
-
 
 		mdns_answer mdns_answer_;
 		mdns_answer_.type(type_);
@@ -214,3 +224,37 @@ void mdns_server::handle_send(//boost::shared_ptr<std::string> /*message*/,
   std::size_t /*bytes_transferred*/) {
 }
 
+mdns_unicast_server::mdns_unicast_server() {
+	start_receive();
+}
+
+void mdns_unicast_server::start_receive() {
+	deb(cout << "czekam na unikaście...\n";)
+
+	socket_mdns_unicast->async_receive_from(
+		boost::asio::buffer(recv_buffer_), remote_endpoint_,
+		boost::bind(&mdns_unicast_server::handle_receive, this,
+		boost::asio::placeholders::error,
+		boost::asio::placeholders::bytes_transferred));
+}
+
+void mdns_unicast_server::handle_receive(const boost::system::error_code& error,
+  std::size_t /*bytes_transferred*/) {
+	deb2(cout << "\nodebrałem zapytanie mDNS przez unicasta\n";)
+
+	// TO DO: check, if from local network
+
+	// ???
+	// silently ignore messages not sent from 5353 port
+	if (remote_endpoint_.port() != MDNS_PORT_NUM) {
+		start_receive();
+		return;
+	}
+
+	// we can set mdns_server attribute, because from now to sending
+	// actions will execute without any async waiting
+	mdns_server_->receiver_address = remote_endpoint_.address();
+	mdns_server_->receive_universal(recv_buffer_, true);
+
+	start_receive();
+}

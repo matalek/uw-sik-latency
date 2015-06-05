@@ -48,7 +48,7 @@ void get_address() {
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	ifr.ifr_addr.sa_family = AF_INET; //IPv4 IP address
 	// we assume, that local network is connected to eth1 interface
-	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+	strncpy(ifr.ifr_name, "eth1", IFNAMSIZ-1);
 
 	ioctl(fd, SIOCGIFADDR, &ifr);
 
@@ -165,26 +165,21 @@ int main(int argc, char *argv[]) {
 
 		// creating socket for MDNS handling
 		boost::system::error_code ec;
-
-		//~ boost::asio::ip::udp::endpoint listen_endpoint(
-			//~ boost::asio::ip::address::from_string("224.0.0.251"), MDNS_PORT_NUM);
 		
 		socket_mdns = new udp::socket(*io_service);
 		socket_mdns->open(udp::v4());
 		socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
 		socket_mdns->set_option(boost::asio::ip::multicast::enable_loopback(false));
 
-		//~ socket_mdns->bind(listen_endpoint);
-		
 		// receive from multicast
 		boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
 		socket_mdns->set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
 
 		// bind to appropriate port
 		socket_mdns->bind(udp::endpoint(boost::asio::ip::address::from_string("224.0.0.251"), MDNS_PORT_NUM));
-		
-		//~ cout << socket_mdns->local_endpoint().address().to_string() << "\n";
 
+
+		// socket for handling MDNS queries received via unicast
 		socket_mdns_unicast = new udp::socket(*io_service);
 		socket_mdns_unicast->open(udp::v4());
 		socket_mdns_unicast->set_option(boost::asio::socket_base::reuse_address(true), ec);
@@ -193,9 +188,11 @@ int main(int argc, char *argv[]) {
 		// bind to appropriate port
 		socket_mdns_unicast->bind(udp::endpoint(boost::asio::ip::address_v4(ntohl(my_address)), MDNS_PORT_NUM));
 
+
 		mdns_client_ = new mdns_client{};
 		name_server_ = new name_server{};
 		mdns_server_ = new mdns_server{};
+		mdns_unicast_server_ = new mdns_unicast_server{};
 		measurement_server measurement_server{};
 		
 		io_service->run();

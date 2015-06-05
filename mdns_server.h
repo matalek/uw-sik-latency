@@ -9,24 +9,25 @@ using namespace std;
 
 extern map<uint32_t, boost::shared_ptr<computer> > computers; // identify by IPv4 address
 
-class mdns_server
-{
+class mdns_server {
 	public:
 		mdns_server();
 
 		void announce_name();
 
+		void receive_universal(char* buffer, bool via_unicast);
+
+		boost::asio::ip::address receiver_address;
+		
 	private:
 		void start_receive();
 
 		void handle_receive(const boost::system::error_code& error,
 		  std::size_t /*bytes_transferred*/);
 
-		void handle_unicast_receive(const boost::system::error_code& error,
-		  std::size_t /*bytes_transferred*/);
-
-		// sending response via multicast
-		void send_response(dns_type type_, service service_);
+		// sending response via multicast or unicast (if appropriate
+		// conditions are met)
+		void send_response(dns_type type_, service service_, bool send_via_unicast);
 
 		void handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start);
 
@@ -41,5 +42,23 @@ class mdns_server
 };
 
 extern mdns_server* mdns_server_;
+
+class mdns_unicast_server {
+	public:
+		mdns_unicast_server();
+
+	private:
+		void start_receive();
+
+		void handle_receive(const boost::system::error_code& error,
+		  std::size_t /*bytes_transferred*/);
+
+		udp::endpoint remote_endpoint_;
+		char recv_buffer_[BUFFER_SIZE];
+};
+
+extern mdns_unicast_server* mdns_unicast_server_;
+
+
 
 #endif
