@@ -52,9 +52,14 @@ void get_address() {
 
 	ioctl(fd, SIOCGIFADDR, &ifr);
 
-	close(fd);
+	
 	my_address = ((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr);
 	my_address_str = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr); // for debugging
+
+	ioctl(fd, SIOCGIFNETMASK, &ifr);
+	cout << "!!!" << inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr) << "a\n";
+
+	close(fd);
 }
 
 
