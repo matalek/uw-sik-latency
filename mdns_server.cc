@@ -34,6 +34,12 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 	if (!error || error == boost::asio::error::message_size){
 		deb(cout << "\nodebrałem zapytanie mDNS\n";)
 
+		// silently ignore messages not sent from 5353 port
+		if (remote_endpoint_.port() != MDNS_PORT_NUM) {
+			start_receive();
+			return;
+		}
+
 		size_t end;
 		
 		stringstream ss;
