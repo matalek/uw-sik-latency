@@ -5,6 +5,8 @@
 #include "mdns_server.h"
 
 mdns_client* mdns_client_;
+name_server* name_server_;
+
 
 name_server::name_server() : name(my_name), number(1), timer_(*io_service, boost::posix_time::seconds(MAX_DELAY)) {
 	send_query();
@@ -35,14 +37,9 @@ void name_server::send_query() {
 	fqdn = {my_name, "_ssh", "_tcp", "_local"};
 	mdns_client_->send_query(dns_type::A, fqdn);
 
-	//~ timer_.cancel();
 	timer_.expires_from_now(boost::posix_time::seconds(MAX_DELAY));
-	//~ if (!timer_waiting) {
-		//~ timer_waiting = true;
 		timer_.async_wait(boost::bind(&name_server::success, this,
 		boost::asio::placeholders::error));
-	//~ }
-
 }
 
 void name_server::success(const boost::system::error_code &ec) {

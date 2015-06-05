@@ -23,10 +23,6 @@ class mdns_header {
 		void nscount(unsigned short n) { return encode(8, 9, n); }
 		void arcount(unsigned short n) { return encode(10, 11, n); }
 
-		friend std::istream& operator>>(std::istream& is, mdns_header& header) {
-			return is.read(reinterpret_cast<char*>(header.rep_), 12);
-		}
-
 		void read(char buffer[]) {
 			for (int i = 0; i < 12; i++)
 				rep_[i] = buffer[i];
@@ -36,10 +32,11 @@ class mdns_header {
 			return os.write(reinterpret_cast<const char*>(header.rep_), 12);
 		}
 
+		// to delete
 		void pisz() {
-			for (int i = 0; i < 12; i++)
+			deb(for (int i = 0; i < 12; i++)
 				cout << static_cast<int>(rep_[i]) << " ";
-			cout << "\n";
+			cout << "\n";)
 		}
 		
 
@@ -72,10 +69,6 @@ class mdns_answer {
 		void ttl(unsigned long n) { return encode(4, 5, 6, 7, n); }
 		void length(unsigned short n) { return encode(8, 9, n); }
 		
-		//~ friend std::istream& operator>>(std::istream& is, mdns_answer& answer) {
-			//~ return is.read(reinterpret_cast<char*>(answer.rep_), 10);
-		//~ }
-
 		friend std::ostream& operator<<(std::ostream& os, const mdns_answer & answer) {
 			return os.write(reinterpret_cast<const char*>(answer.rep_), 10);
 		}
@@ -176,9 +169,9 @@ class ipv4_address {
 			rep_[b] = static_cast<unsigned char>((n >> 16) & 0xFF);
 			rep_[c] = static_cast<unsigned char>((n >> 8) & 0xFF);
 			rep_[d] = static_cast<unsigned char>(n & 0xFF);
-			for (size_t i = 0; i < 4; i++)
+			deb(for (size_t i = 0; i < 4; i++)
 				cout << static_cast<int>(rep_[i]) << " ";
-			cout << "\n";
+			cout << "\n"; )
 		}
 		
 		unsigned char rep_[4];

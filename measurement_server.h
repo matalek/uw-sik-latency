@@ -3,6 +3,7 @@
 
 #include "shared.h"
 #include "computer.h"
+#include "mdns_server.h"
 
 class measurement_server {
 	public:
@@ -13,8 +14,7 @@ class measurement_server {
 
 	private:
 	
-		void measure()
-		{
+		void measure() {
 			deb(cout << "mierzę \n";)
 			for (auto it = computers.begin(); it != computers.end(); it++)
 				it->second->measure();

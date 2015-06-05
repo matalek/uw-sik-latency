@@ -11,6 +11,7 @@ class name_server {
 	public:
 		name_server();
 
+		// notify, that this name is used by another computer
 		void notify();
 
 	private:
@@ -26,5 +27,7 @@ class name_server {
 
 		bool timer_waiting;
 };
+
+extern name_server* name_server_;
 
 #endif

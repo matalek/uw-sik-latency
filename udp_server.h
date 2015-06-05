@@ -1,26 +1,6 @@
 #ifndef UDP_SERVER_H
 #define UDP_SERVER_H
 
-#include <iostream>
-#include <utility>
-#include <thread>
-#include <chrono>
-#include <functional>
-#include <ctime>
-#include <string>
-#include <cstdint>
-#include <endian.h>
-#include <algorithm>
-#include <sstream>
-#include <stdio.h>
-
-#include "boost/program_options.hpp"
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 #include "shared.h"
 
 void udp_delay_server() {
@@ -36,7 +16,7 @@ void udp_delay_server() {
 			boost::system::error_code error;
 			socket.receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
 
-			cout << be64toh(recv_buf[0]) << "\n";
+			deb(cout << be64toh(recv_buf[0]) << "\n";)
 
 			if (error && error != boost::asio::error::message_size)
 				throw boost::system::system_error(error);
@@ -55,8 +35,7 @@ void udp_delay_server() {
 			socket.send_to(boost::asio::buffer(message),
 				remote_endpoint, 0, ignored_error);
 		}
-	} catch (std::exception& e)
-	{
+	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
 

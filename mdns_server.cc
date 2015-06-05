@@ -1,24 +1,3 @@
-#include <iostream>
-#include <utility>
-#include <thread>
-#include <chrono>
-#include <functional>
-#include <ctime>
-#include <string>
-#include <cstdint>
-#include <endian.h>
-#include <algorithm>
-#include <sstream>
-#include <stdio.h>
-#include <unistd.h>
-
-#include "boost/program_options.hpp"
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 #include "shared.h"
 #include "mdns_client.h"
 #include "computer.h"
@@ -28,25 +7,10 @@
 
 using namespace std;
 
-name_server* name_server_;
-map<uint32_t, boost::shared_ptr<computer> > computers; // identify by IPv4 address
+map<uint32_t, boost::shared_ptr<computer> > computers;
 mdns_server* mdns_server_;
 
-mdns_server::mdns_server() //boost::asio::io_service& io_service)
-//~ : socket_(*io_service), udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
-	{
-	 
-	//~ boost::system::error_code ec;
-	//~ socket_mdns->open(udp::v4());
-	
-	//~ socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
-	//~ socket_mdns->set_option(boost::asio::ip::multicast::enable_loopback(false));
-
-	//~ boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
-	//~ socket_mdns->set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
-
-	//~ socket_mdns->bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
-
+mdns_server::mdns_server() {
 	start_receive();
 }
 
@@ -87,6 +51,7 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 			// answering query
 			mdns_query_end mdns_query_end_;
 			mdns_query_end_.read(recv_buffer_, end);
+			
 			// when our name is not set, we do not want to
 			// be visible for network
 			if (NAME_IS_SET) {
@@ -104,14 +69,11 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 			// handling response to query
 			mdns_answer mdns_answer_;
 			mdns_answer_.read(recv_buffer_, end);
-			
 			if (mdns_answer_.type() == dns_type::A) {
 				handle_a_response(mdns_answer_, qname, end);
 			} else if (mdns_answer_.type() == dns_type::PTR) {
-				// sending query for IP
 				handle_ptr_response(mdns_answer_, qname, end);
 			}
-
 		}
 		
 		start_receive();
@@ -141,7 +103,6 @@ void mdns_server::send_response(dns_type type_, service service_) {
 		
 
 		// crete FQDN appropriate for this service
-		
 		vector<string> fqdn = {my_name};
 		if (service_ == service::UDP) {
 			fqdn.push_back("_opoznienia");
@@ -152,23 +113,21 @@ void mdns_server::send_response(dns_type type_, service service_) {
 		}
 		fqdn.push_back("_local");
 
-		deb(cout << fqdn[0] << " " << fqdn[1] << " " << fqdn[2] << " " << fqdn[2] << " " <<  "\n";)
-
-		// FQDN specified by a list of component strings
-		// in PTR we do not add full name, but the same name of
-		// service, as in query
-		ostringstream ss_fqdn;
+		// FQDN specified by a list of component strings.		
+		ostringstream oss_fqdn;
 		for (size_t i = 0; i < fqdn.size(); i++) {
-			cout << "!!!" << fqdn[i].length() << " " << fqdn[i] << "\n";
+			deb(cout << "!!!" << fqdn[i].length() << " " << fqdn[i] << "\n";)
+
 			uint8_t len = static_cast<uint8_t>(fqdn[i].length());
-			ss_fqdn << len << fqdn[i];
+			oss_fqdn << len << fqdn[i];
+			// In PTR, QNAME is not full name, but the same name as in query
 			if ((type_ != dns_type::PTR) || i != 0)
 				oss << len << fqdn[i];
 		}
 
-		// terminating FQDN with null byte
+		// terminating FQDN and QNAME with null byte
 		oss << static_cast<uint8_t>(0);
-		ss_fqdn << static_cast<uint8_t>(0);
+		oss_fqdn << static_cast<uint8_t>(0);
 
 
 		mdns_answer mdns_answer_;
@@ -184,12 +143,10 @@ void mdns_server::send_response(dns_type type_, service service_) {
 			oss << mdns_answer_;
 			oss << address_;
 		} else { // PTR
-		
-			mdns_answer_.length(ss_fqdn.str().length());
+			mdns_answer_.length(oss_fqdn.str().length());
 			oss << mdns_answer_;
-			oss << (ss_fqdn.str());
+			oss << (oss_fqdn.str());
 		}
-
 
 		boost::shared_ptr<std::string> message(new std::string(oss.str()));
 
@@ -205,14 +162,13 @@ void mdns_server::send_response(dns_type type_, service service_) {
 }
 
 void mdns_server::handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
-	// nie wiem do końca, póki co interesuje mnie tylko nazwa
-	//TTL & length
 	vector<string> fqdn = read_name(recv_buffer_, start);
 	mdns_client_->send_query(dns_type::A, fqdn);
 }
 
 void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
-
+	// maybe someone announce, that he already uses the name, that we
+	// were trying to use
 	if (!NAME_IS_SET) {
 		vector<string> name1 = {my_name,  "_opoznienia", "_udp", "_local"};
 		vector<string> name2 = {my_name,  "_ssh", "_tcp", "_local"};
@@ -223,7 +179,8 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 	
 	// getting IP address
 	ipv4_address address;
-	address.read(recv_buffer_, start); // where TTL and length?
+	address.read(recv_buffer_, start);
+	
 	// if not already existing, creating new computer
 	if (!computers.count(address.address())) {
 		boost::shared_ptr<computer> comp(new computer(address.address(), qname));
@@ -236,7 +193,6 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 
 void mdns_server::handle_send(//boost::shared_ptr<std::string> /*message*/,
   const boost::system::error_code& /*error*/,
-  std::size_t /*bytes_transferred*/)
-{
+  std::size_t /*bytes_transferred*/) {
 }
 

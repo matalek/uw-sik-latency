@@ -7,9 +7,7 @@
 
 using namespace std;
 
-extern name_server* name_server_;
 extern map<uint32_t, boost::shared_ptr<computer> > computers; // identify by IPv4 address
-
 
 class mdns_server
 {

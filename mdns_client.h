@@ -1,49 +1,18 @@
 #ifndef MDNS_CLIENT_H
 #define MDNS_CLIENT_H
 
-#include <iostream>
-#include <utility>
-#include <thread>
-#include <chrono>
-#include <functional>
-#include <ctime>
-#include <string>
-#include <cstdint>
-#include <endian.h>
-#include <algorithm>
-#include <sstream>
-#include <stdio.h>
-
-#include "boost/program_options.hpp"
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 #include "shared.h"
 #include "mdns_fields.h"
 
-using boost::asio::ip::udp;
-
 using namespace std;
-
-
 
 class mdns_client {
 	public:
 
-		mdns_client() : //socket_(*io_service),
-		timer_(*io_service, boost::posix_time::seconds(exploration_time)) { //, udp::endpoint(udp::v4(), MDNS_PORT_NUM)) {
-			//~ boost::system::error_code ec;
-			//~ socket_mdns->open(udp::v4());
-			//~ socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
-			//~ socket_mdns->bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
+		mdns_client() : timer_(*io_service, boost::posix_time::seconds(exploration_time)) {
 			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
 		}
 
-	
-	
 		void send_query(dns_type type_, vector<string> fqdn) {
 			deb(cout << "\nzaczynam wysyłać mdnsa typu " << type_ << " \n";)
 			try {
@@ -84,10 +53,9 @@ class mdns_client {
 				boost::shared_ptr<std::string> message(new std::string(oss.str()));
 				
 				socket_mdns->async_send_to(
-				//~ buffers,
 				boost::asio::buffer(*message),
 				 receiver_endpoint,
-				  boost::bind(&mdns_client::handle_send, this, //message,
+				  boost::bind(&mdns_client::handle_send, this,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
 
@@ -117,10 +85,7 @@ class mdns_client {
 			deb(cout << "wysłano!!!\n";)
 		}
 
-		//~ udp::socket socket_;
 		boost::asio::deadline_timer timer_;
-		
-
 };
 
 

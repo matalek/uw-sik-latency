@@ -5,11 +5,11 @@ vector<string> read_name(char buffer[], size_t& start) {
 
 	while (true) {
 		uint8_t len = buffer[start++];
-		
 		if (!len)
 			break;
+
 		char name[len + 1];
-		memcpy(name, buffer + start, len);
+		memcpy(name, buffer + start, len); // TO DO: add checking error
 		name[len] = 0;
 		start += len;
 		res.push_back(name);

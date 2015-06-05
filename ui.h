@@ -28,8 +28,7 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 		typedef boost::shared_ptr<tcp_connection> pointer;
 
 		static pointer create() {
-		//boost::asio::io_service& io_service){
-			return pointer(new tcp_connection());//*io_service));
+			return pointer(new tcp_connection());
 		}
 
 		tcp::socket& socket() {
@@ -83,11 +82,9 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 				lines.push_back(make_pair(avg_avg, oss.str()));
 			}
 			write_lines();
-			
 		}
 
 	private:
-		
 		void write_lines() {
 			message_ = "\033[2J\033[0;0H"; // clean console
 			unsigned int end = lines.size();
@@ -134,11 +131,9 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 		}
 
 		void read() {
-
 			boost::asio::async_read_until(socket_, response_, "",
-          boost::bind(&tcp_connection::handle_read, shared_from_this(),
-            boost::asio::placeholders::error));
-
+				boost::bind(&tcp_connection::handle_read, shared_from_this(),
+				boost::asio::placeholders::error));
 		}
 
 		tcp_connection()
@@ -151,9 +146,7 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			
 			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(ui_refresh_time));
 			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this));
-
 		}
-		
 
 		void handle_start(const boost::system::error_code& /*error*/,
 		  size_t /*bytes_transferred*/) { refresh(); }
@@ -165,7 +158,6 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			std::istream response_stream(&response_);
 			char c;
 			response_stream >> c;
-			//cout << &response_;
 			write(c);
 		}
 
@@ -180,16 +172,14 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 
 class tcp_server {
 	public:
-		tcp_server(//boost::asio::io_service& io_service,
-		uint16_t ui_port_num)
-		: acceptor_(*io_service, tcp::endpoint(tcp::v4(), ui_port_num)) {
+		tcp_server(uint16_t ui_port_num)
+			: acceptor_(*io_service, tcp::endpoint(tcp::v4(), ui_port_num)) {
 			start_accept();
 		}
 
 	private:
 		void start_accept() {
-			tcp_connection::pointer new_connection =
-			  tcp_connection::create();//acceptor_.get_io_service());
+			tcp_connection::pointer new_connection = tcp_connection::create();
 
 			acceptor_.async_accept(new_connection->socket(),
 				boost::bind(&tcp_server::handle_accept, this, new_connection,

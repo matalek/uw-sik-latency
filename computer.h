@@ -5,10 +5,10 @@
 #include "icmp_header.hpp"
 #include "ipv4_header.hpp"
 
+#define BUFFER_SIZE 1500
+
 class computer : public boost::enable_shared_from_this<computer> {
 	public:
-
-		//~ computer() : socket_udp(*io_service)  { } // do zastanowienia się
 		
 		computer(uint32_t add, vector<string>& fqdn) :
 			socket_udp(*io_service),
@@ -30,10 +30,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 			remote_tcp_endpoint.port(SSH_PORT_NUM);
 
 			remote_icmp_endpoint.address(boost::asio::ip::address_v4(address));
-
-			// only temporary here
-			//~ measure_udp();
-			
 		}
 
 		void add_service(vector<string>& fqdn) {
@@ -67,7 +63,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		uint32_t get_tcp_average() {
-			cout << "-------" << tcp_times.size() << "\n";
 			if (tcp_times.size())
 				return tcp_sum / tcp_times.size();
 			return 0; 
@@ -85,6 +80,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 	private:
 
+		// calculating current time
 		uint64_t get_time() {
 			struct timeval tv;
 			gettimeofday(&tv,NULL);
@@ -92,11 +88,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		void measure_udp() {
-			
-			// calculating current time
-			struct timeval tv;
-			gettimeofday(&tv,NULL);
-			uint64_t time = 1000000 * tv.tv_sec + tv.tv_usec;
+			uint64_t time = get_time();
 
 			// creating message
 			boost::shared_ptr<vector<uint64_t> > message(new vector<uint64_t>{htobe64(time)});
@@ -125,37 +117,40 @@ class computer : public boost::enable_shared_from_this<computer> {
 			// calculating and saving time
 			deb(cout << "odpowiedź na udp\n";)
 
-				uint64_t val;
-				memcpy((char *)&val, recv_buffer_, 8);
-				uint64_t start_time = be64toh(val);
-				
-				memcpy((char *)&val, recv_buffer_ + 8, 8);
-				uint64_t middle_time = be64toh(val);
-				
-				// time of receiving answer
-				struct timeval tv;
-				gettimeofday(&tv,NULL);
-				uint64_t end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+			uint64_t val;
+			memcpy((char *)&val, recv_buffer_, 8);
+			uint64_t start_time = be64toh(val);
+			
+			// time of receiving answer
+			uint64_t end_time = get_time();
 
-				// writing on error output received data
-				// KONIECZNE???
-				cerr << start_time << " " << middle_time << "\n"; 
-				uint64_t res = end_time - start_time;
-				deb(cout << "Wynik pomiaru udp: " << res << " " << start_time << " " << end_time << "\n";)
+			// in task 1. it was necessery to write received data
+			//  on error output. In this task we ommit it due to
+			// transparity reasons.
+			// However, it is still possibly to write this data
+			// by uncommenting following lines.
 
-				udp_times.push(res);
-				udp_sum += res;
-				if (udp_times.size() > 10) {
-					udp_sum -= udp_times.front();
-					udp_times.pop();
-				}
+			// memcpy((char *)&val, recv_buffer_ + 8, 8);
+			// uint64_t middle_time = be64toh(val);
+			// cerr << start_time << " " << middle_time << "\n";
+
+			uint64_t res = end_time - start_time;
+			deb(cout << "Wynik pomiaru udp: " << res << " " << start_time << " " << end_time << "\n";)
+
+			udp_times.push(res);
+			udp_sum += res;
+			if (udp_times.size() > 10) {
+				udp_sum -= udp_times.front();
+				udp_times.pop();
+			}
 		}
 
 		void measure_tcp() {
-			struct timeval tv;
-			gettimeofday(&tv,NULL);
-			tcp_start_time = 1000000 * tv.tv_sec + tv.tv_usec;
-
+			// using TCP protocol we can be sure, that we will connect
+			// to computer before trying another connect. Therefore
+			// we can remember only one start time.
+			tcp_start_time = get_time();
+			
 			// connect socket to the server
 			socket_tcp.async_connect(remote_tcp_endpoint,
 				boost::bind(&computer::handle_connect_tcp, shared_from_this(),
@@ -163,11 +158,8 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		void handle_connect_tcp(const boost::system::error_code& /*error*/) {
-
 			// time of receiving answer
-			struct timeval tv;
-			gettimeofday(&tv,NULL);
-			uint64_t end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+			uint64_t end_time = get_time();
 
 			uint64_t res = end_time - tcp_start_time;
 			deb(cout << "Wynik pomiaru tcp: " << res << " " << tcp_start_time << " " << end_time << "\n";)
@@ -181,7 +173,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 		}
 
 		void measure_icmp() {
-
 			// sending index number and group number
 			stringstream ss;
 			string body;
@@ -189,31 +180,30 @@ class computer : public boost::enable_shared_from_this<computer> {
 			for (size_t i = 0; i < msg.size(); i++)
 				ss << msg[i];
 			ss >> body;
-			
-			deb(cout << "BODY " << body << " " << sizeof(body) << "\n"); 
+
 			// create an ICMP header for an echo request
 			icmp_header echo_request;
 			echo_request.type(icmp_header::echo_request);
 			echo_request.code(0);
 			echo_request.identifier(ICMP_ID);
 			echo_request.sequence_number(++sequence_number);
-			deb(cout << "nadałem numer " << sequence_number << "\n";)
 			compute_checksum(echo_request, body.begin(), body.end());
+
+			deb(cout << "nadałem numer " << sequence_number << "\n";)
 
 			// encode the request packet
 			boost::asio::streambuf request_buffer;
 			std::ostream os(&request_buffer);
 			os << echo_request << body;
 
-			// send the request
+			// save time of sending in map, because we cannot be sure
+			// that we will receive answers in the same order
 			icmp_start_times.insert(make_pair(sequence_number, get_time()));
+			
 			deb(cout << "zaraz wyślę zapytanie icmp\n";)
-			socket_icmp.send_to(request_buffer.data(), remote_icmp_endpoint);
 
-			// wait up to five seconds for a reply
-			//~ num_replies_ = 0;
-			//~ timer_.expires_at(time_sent_ + posix_time::seconds(5));
-			//~ timer_.async_wait(boost::bind(&pinger::handle_timeout, this));
+			// send the request
+			socket_icmp.send_to(request_buffer.data(), remote_icmp_endpoint);
 
 			deb(cout << "wysłałem zapytanie icmp\n";)
 
@@ -225,8 +215,10 @@ class computer : public boost::enable_shared_from_this<computer> {
 			// discard any data already in the buffer
 			icmp_reply_buffer.consume(icmp_reply_buffer.size());
 
-			// wait for a reply. We prepare the buffer to receive up to 64KB.
-			socket_icmp.async_receive(icmp_reply_buffer.prepare(65536),
+			// wait for a reply. We prepare the buffer to receive up to
+			// BUFFER_SIZE of data. Because of simple usage in our
+			// program, this number does not to be very high
+			socket_icmp.async_receive(icmp_reply_buffer.prepare(BUFFER_SIZE),
 			boost::bind(&computer::handle_icmp_receive, this, _2));
 		}
 
@@ -242,16 +234,16 @@ class computer : public boost::enable_shared_from_this<computer> {
 			is >> ipv4_hdr >> icmp_hdr;
 
 			deb(cout << "odebrałem icmp " <<
-			icmp_hdr.sequence_number() << " " << sequence_number << " " <<
-			icmp_hdr.type() << " " << icmp_header::echo_reply << "\n";)
+				icmp_hdr.sequence_number() << " " << sequence_number << " " <<
+				icmp_hdr.type() << " " << icmp_header::echo_reply << "\n";)
 
 			// we can receive all ICMP packets received by the host, so we need to
 			// filter out only the echo replies that match the our identifier and
-			// expected sequence number.
+			// expected sequence number
 			map<unsigned short, uint64_t>::iterator it, it2;
 			if (is && icmp_hdr.type() == icmp_header::echo_reply
-			&& icmp_hdr.identifier() == ICMP_ID
-			&& (it = icmp_start_times.find(icmp_hdr.sequence_number())) != icmp_start_times.end()) {
+				&& icmp_hdr.identifier() == ICMP_ID
+				&& (it = icmp_start_times.find(icmp_hdr.sequence_number())) != icmp_start_times.end()) {
 				
 				uint64_t res = get_time() - it->second;
 				it2 = it;
@@ -269,7 +261,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 			start_icmp_receive();
 		}
 
-	
 		string name;
 		bool opoznienia_service;
 		bool ssh_service; 
@@ -300,7 +291,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 		boost::asio::streambuf icmp_reply_buffer;
 		unsigned short sequence_number;
-		
 };
 
 

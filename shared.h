@@ -29,20 +29,11 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-
 using namespace std;
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 using boost::asio::ip::icmp;
 
-extern uint16_t udp_port_num; // configured by -u option
-extern uint16_t ui_port_num; // configured by -U option
-extern double measurement_time; // configured by -t option
-extern double exploration_time; // configured by -T option
-extern double ui_refresh_time; // configured by -v option
-extern bool ssh_service; // configured by -s option
-
-extern bool NAME_IS_SET;
 #define MAX_DELAY 5 // to change
 
 #define MDNS_PORT_NUM 5353
@@ -59,13 +50,22 @@ extern bool NAME_IS_SET;
 #define deb(a)
 #define deb2(a) a
 
-//~ vector<string> my_name;
+extern uint16_t udp_port_num; // configured by -u option
+extern uint16_t ui_port_num; // configured by -U option
+extern double measurement_time; // configured by -t option
+extern double exploration_time; // configured by -T option
+extern double ui_refresh_time; // configured by -v option
+extern bool ssh_service; // configured by -s option
+
+extern bool NAME_IS_SET;
+
 extern string my_name;
 extern uint32_t my_address; // BE order
 extern string my_address_str;
 
 extern boost::asio::io_service* io_service;
 extern udp::socket* socket_mdns;
+
 
 enum dns_type {
 	A = 1,
@@ -78,8 +78,7 @@ enum service {
 	NONE
 };
 
-
+// which service is assigned to this fqdn (starting from start)
 extern service which_my_service(vector<string>& fqdn, size_t start);
-
 
 #endif

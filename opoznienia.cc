@@ -3,29 +3,10 @@
  * sudo setcap cap_net_raw+eip ./opoznienia
  * in order to enable root previlages to create raw sockets.
  *
+ * Additional assumption:
+ * - program does not measure delays to localhost
  *
  */ 
-
-#include <iostream>
-#include <utility>
-#include <thread>
-#include <chrono>
-#include <functional>
-#include <ctime>
-#include <string>
-#include <cstdint>
-#include <endian.h>
-#include <algorithm>
-#include <sstream>
-#include <stdio.h>
-#include <unistd.h>
-
-#include "boost/program_options.hpp"
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 
 // to get IP address
 #include <string.h>
@@ -36,31 +17,12 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 
-#include "err.h"
+#include "shared.h"
 #include "mdns_server.h"
 #include "mdns_client.h"
-#include "shared.h"
-#include "ui.h"
 #include "udp_server.h"
 #include "measurement_server.h"
-
-using boost::asio::ip::udp;
-using boost::asio::ip::tcp;
-
-
-
-
-using namespace std;
-
-
-
-
-std::string make_daytime_string()
-{
-  using namespace std; // For time_t, time and ctime;
-  time_t now = time(0);
-  return ctime(&now);
-}
+#include "ui.h"
 
 void get_address() {
 	int fd;
@@ -79,34 +41,14 @@ void get_address() {
 }
 
 
-struct mdns_body {
-	uint16_t type_;
-	uint16_t class_;
-	int32_t ttl_;
-	uint16_t length_;
-	uint32_t address_;
-};
-
-void add_mdns_body(mdns_body body, std::vector<boost::asio::const_buffer> buffers) {
-	buffers.push_back(boost::asio::buffer(&body.type_, sizeof(body.type_)));
-	buffers.push_back(boost::asio::buffer(&body.class_, sizeof(body.class_)));
-	buffers.push_back(boost::asio::buffer(&body.ttl_, sizeof(body.ttl_)));
-	buffers.push_back(boost::asio::buffer(&body.length_, sizeof(body.length_)));
-	buffers.push_back(boost::asio::buffer(&body.address_, sizeof(body.address_)));
-}
-
 void set_candidate_name() {
 	// dodać obsługę błędu
 	char hostname[HOSTNAME_SIZE];
 	gethostname(hostname, HOSTNAME_SIZE);
 
 	deb(printf("hostname: %s\n", hostname);)
-	//~ my_name = { hostname, "_opoznienia", "_udp", "_local"};
-	//~ deb(cout << "---" << my_name[0] << "\n";)
 	my_name = hostname;
 }
-
-
 
 int main(int argc, char *argv[]) {
 	
@@ -119,8 +61,7 @@ int main(int argc, char *argv[]) {
 		(",t", po::value<double>(), "czas pomiędzy pomiarami opóźnień: 1 sekunda")
 		(",T", po::value<double>(), "czas pomiędzy wykrywaniem komputerów: 10 sekund")
 		(",v", po::value<double>(), "czas pomiędzy aktualizacjami interfejsu użytkownika: 1 sekunda")
-		(",s", "rozgłaszanie dostępu do usługi _ssh._tcp: domyślnie wyłączone")
-	;
+		(",s", "rozgłaszanie dostępu do usługi _ssh._tcp: domyślnie wyłączone");
 
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -142,75 +83,48 @@ int main(int argc, char *argv[]) {
 	// creating thread for UDP delay server
 	std::thread udp_delay_server_thread(udp_delay_server);
 
+	set_candidate_name();
 	get_address();
 	deb(cout << "Adres ip: " << my_address << "\n";)
-
 	
-
-	set_candidate_name();
 	
 	try {
-		//~ boost::asio::io_service io_service;
 		io_service = new boost::asio::io_service();
 
 		// creating tcp server for ui interface
 		tcp_server server(ui_port_num);
 
-		// only temporary here
-
-		//~ udp::endpoint endpoint;
-		//endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
-		//~ endpoint.port(5353);
-
-		//~ udp::socket socket(io_service);
-
-		//udp::socket socket(io_service, udp::endpoint(udp::v4(), 13));
-		//~ udp::socket socket(io_service, udp::endpoint(udp::v4(), MDNS_PORT_NUM));
-		//~ socket.open(udp::v4());
-		
-		// creating thread for mDNS sever
-		//~ std::thread mdns_server_thread(mdns_server, ref(io_service));
-
+		// creating socket for MDNS handling
 		boost::system::error_code ec;
 		socket_mdns = new udp::socket(*io_service);
 		socket_mdns->open(udp::v4());
 		socket_mdns->set_option(boost::asio::socket_base::reuse_address(true), ec);
 		socket_mdns->set_option(boost::asio::ip::multicast::enable_loopback(false));
 
+		// receive from multicast
 		boost::asio::ip::address multicast_address = boost::asio::ip::address::from_string("224.0.0.251");
 		socket_mdns->set_option(boost::asio::ip::multicast::join_group(multicast_address), ec);
-		
+
+		// bind to appropriate port
 		socket_mdns->bind(udp::endpoint(udp::v4(), MDNS_PORT_NUM));
 		
-		mdns_client_ = new mdns_client();
+		mdns_client_ = new mdns_client{};
 		name_server_ = new name_server{};
-		mdns_server_ = new mdns_server();
-
+		mdns_server_ = new mdns_server{};
 		measurement_server measurement_server{};
 		
-
-		//~ vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
-		//~ fqdn[0] = "_opoznienia";
-		//~ fqdn[1] = "_udp";
-		//~ fqdn[2] = "_local";
-		//~ mdns_client_->send_query(dns_type::PTR, fqdn);
-
-		
-		
 		io_service->run();
-
-		
 	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
 	}
 
-	udp_delay_server_thread.join(); // to change
-	//~ mdns_server_thread.join(); // to change
+	//~ udp_delay_server_thread.join(); 
 
 	free(mdns_server_);
 	free(mdns_client_);
+	free(name_server_);
+	free(socket_mdns);
 	free(io_service);
 	
-
 	return 0;
 }
