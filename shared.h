@@ -65,6 +65,7 @@ extern string my_address_str;
 
 extern boost::asio::io_service* io_service;
 extern udp::socket* socket_mdns;
+extern udp::socket* socket_mdns_unicast;
 
 
 enum dns_type {

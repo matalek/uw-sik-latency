@@ -27,12 +27,23 @@ void mdns_server::start_receive() {
 		boost::bind(&mdns_server::handle_receive, this,
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
+
+	socket_mdns_unicast->async_receive_from(
+		boost::asio::buffer(recv_buffer_), remote_endpoint_,
+		boost::bind(&mdns_server::handle_unicast_receive, this,
+		boost::asio::placeholders::error,
+		boost::asio::placeholders::bytes_transferred));
+}
+
+void mdns_server::handle_unicast_receive(const boost::system::error_code& error,
+  std::size_t /*bytes_transferred*/) {
+	deb2(cout << "\nodebrałem zapytanie mDNS przez unicasta\n";)
 }
 
 void mdns_server::handle_receive(const boost::system::error_code& error,
   std::size_t /*bytes_transferred*/) {
 	if (!error || error == boost::asio::error::message_size){
-		deb(cout << "\nodebrałem zapytanie mDNS\n";)
+		deb2(cout << "\nodebrałem zapytanie mDNS\n";)
 
 		// silently ignore messages not sent from 5353 port
 		if (remote_endpoint_.port() != MDNS_PORT_NUM) {

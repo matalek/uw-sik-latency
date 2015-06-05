@@ -22,6 +22,9 @@ class mdns_server
 		void handle_receive(const boost::system::error_code& error,
 		  std::size_t /*bytes_transferred*/);
 
+		void handle_unicast_receive(const boost::system::error_code& error,
+		  std::size_t /*bytes_transferred*/);
+
 		// sending response via multicast
 		void send_response(dns_type type_, service service_);
 

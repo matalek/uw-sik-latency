@@ -14,6 +14,7 @@ string my_address_str;
 
 boost::asio::io_service* io_service;
 udp::socket* socket_mdns;
+udp::socket* socket_mdns_unicast;
 
 service which_my_service(vector<string>& fqdn, size_t start) {
 	if (start + 2 < fqdn.size() &&
