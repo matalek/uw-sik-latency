@@ -60,14 +60,22 @@ void name_server::send_probes(const boost::system::error_code &ec) {
 	fqdn = {my_name, "_ssh", "_tcp", "_local"};
 	mdns_client_->send_query(dns_type::A, fqdn);
 
+	auto probed_name = boost::shared_ptr<string>(new string(my_name));
+
 	timer_.expires_from_now(boost::posix_time::seconds(MAX_DELAY));
 		timer_.async_wait(boost::bind(&name_server::success, this,
+		probed_name,
 		boost::asio::placeholders::error));
 }
 
-void name_server::success(const boost::system::error_code &ec) {
-	deb2(cout << "koniec timera\n";)
-	if (ec != boost::asio::error::operation_aborted) {
+void name_server::success(boost::shared_ptr<string> probed_name,
+	const boost::system::error_code &ec) {
+	deb2(cout << "koniec timera " << my_name << " " << *probed_name << " \n";)
+	// we have to check, that maybe the time has passed, but this
+	// function was invoked after receiving information, that someone
+	// uses this name. Therefore, we check if this function was invoked
+	// for name, that we currently probe
+	if (ec != boost::asio::error::operation_aborted && *probed_name == my_name) {
 		NAME_IS_SET = true;
 		// according to standard, we have to anounce, that this name
 		// has been taken, so no one would use it for themself

@@ -19,7 +19,8 @@ class name_server {
 		
 		void send_probes(const boost::system::error_code &ec);
 
-		void success(const boost::system::error_code &ec);
+		void success(boost::shared_ptr<string> probed_name,
+			const boost::system::error_code &ec);
 
 		// name of computer: name (number) (for number > 1)
 		string name;
