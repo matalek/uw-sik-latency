@@ -9,7 +9,7 @@ class measurement_server {
 	public:
 		measurement_server() : timer_(*io_service, boost::posix_time::seconds(measurement_time)) {
 			deb(cout << "tworzę timer\n";)
-			timer_.async_wait(boost::bind(&measurement_server::measure, this));
+			measure();
 		}
 
 	private:

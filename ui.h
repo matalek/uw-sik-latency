@@ -64,6 +64,10 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 						sum += avg[i];
 						cnt++;
 					}
+
+				if (!sum)
+					// not yet any delay measured
+					continue;
 					
 				uint8_t spaces;
 				uint32_t avg_avg = MAX_DELAY * 1000;
