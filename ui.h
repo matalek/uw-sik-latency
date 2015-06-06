@@ -81,8 +81,15 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 
 				for (uint8_t i = 0; i < spaces; i++)
 					oss << " ";
-				
-				oss << avg[0] << " " << avg[1] << " " << avg[2];
+
+				for (int i = 0; i < 3; i++) {
+					if (avg[i])
+						oss << avg[i];
+					else
+						oss << "-";
+					if (i != 3)
+						oss << " ";
+				}
 				lines.push_back(make_pair(avg_avg, oss.str()));
 			}
 			write_lines();
