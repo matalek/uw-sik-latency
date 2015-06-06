@@ -25,19 +25,11 @@ class mdns_header {
 		void arcount(unsigned short n) { return encode(10, 11, n); }
 
 		void read(char buffer[]) {
-			for (int i = 0; i < 12; i++)
-				rep_[i] = buffer[i];
+			memcpy(rep_, buffer, 12);
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const mdns_header& header) {
 			return os.write(reinterpret_cast<const char*>(header.rep_), 12);
-		}
-
-		// to delete
-		void pisz() {
-			deb(for (int i = 0; i < 12; i++)
-				cout << static_cast<int>(rep_[i]) << " ";
-			cout << "\n";)
 		}
 		
 
@@ -75,8 +67,7 @@ class mdns_answer {
 		}
 
 		void read(char buffer[], size_t& start) {
-			for (size_t i = 0; i < 10; i++)
-				rep_[i] = buffer[i + start];
+			memcpy(rep_, buffer + start, 10);
 			start += 10;
 		}
 
@@ -121,8 +112,7 @@ class mdns_query_end {
 		}
 
 		void read(char buffer[], size_t& start) {
-			for (size_t i = 0; i < 4; i++)
-				rep_[i] = buffer[i + start];
+			memcpy(rep_, buffer + start, 4);
 			start += 4;
 		}
 
@@ -154,8 +144,7 @@ class ipv4_address {
 		}
 
 		void read(char buffer[], size_t& start) {
-			for (size_t i = 0; i < 4; i++)
-				rep_[i] = buffer[i + start];
+			memcpy(rep_, buffer + start, 4);
 			start += 4;
 		}
 
