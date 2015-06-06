@@ -9,9 +9,9 @@ bool announce_ssh_service; // configured by -s option
 bool NAME_IS_SET = false;
 
 string my_name;
-uint32_t my_address; // BE order
+uint32_t my_address;
 string my_address_str;
-uint32_t my_netmask; // BE order
+uint32_t my_netmask;
 
 boost::asio::io_service* io_service;
 udp::socket* socket_mdns;

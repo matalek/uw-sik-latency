@@ -60,9 +60,9 @@ extern bool announce_ssh_service; // configured by -s option
 extern bool NAME_IS_SET;
 
 extern string my_name;
-extern uint32_t my_address; // BE order
+extern uint32_t my_address; // host order
 extern string my_address_str;
-extern uint32_t my_netmask; // BE order
+extern uint32_t my_netmask; // host order
 
 extern boost::asio::io_service* io_service;
 extern udp::socket* socket_mdns;

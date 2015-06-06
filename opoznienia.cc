@@ -53,11 +53,11 @@ void get_address() {
 	ioctl(fd, SIOCGIFADDR, &ifr);
 
 	
-	my_address = ((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr);
+	my_address = ntohl((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr);
 	my_address_str = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr); // for debugging
 
 	ioctl(fd, SIOCGIFNETMASK, &ifr);
-	my_netmask = (((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr; 
+	my_netmask = ntohl((((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr); 
 
 	close(fd);
 }
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 		socket_mdns_unicast->set_option(boost::asio::ip::multicast::enable_loopback(false));
 
 		// bind to appropriate port
-		socket_mdns_unicast->bind(udp::endpoint(boost::asio::ip::address_v4(ntohl(my_address)), MDNS_PORT_NUM));
+		socket_mdns_unicast->bind(udp::endpoint(boost::asio::ip::address_v4(my_address), MDNS_PORT_NUM));
 
 
 		mdns_client_ = new mdns_client{};

@@ -167,7 +167,7 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 			// IPv4 address record
 			mdns_answer_.length(4);
 			ipv4_address address_;
-			address_.address(ntohl(my_address)); // może ogólnie zmienić
+			address_.address(my_address);
 			oss << mdns_answer_;
 			oss << address_;
 		} else { // PTR
@@ -242,7 +242,13 @@ void mdns_unicast_server::handle_receive(const boost::system::error_code& error,
   std::size_t /*bytes_transferred*/) {
 	deb2(cout << "\nodebrałem zapytanie mDNS przez unicasta\n";)
 
-	// TO DO: check, if from local network
+	// checking, if from local network
+	if ((remote_endpoint_.address().to_v4().to_ulong() & my_netmask) != (my_address & my_netmask)) {
+		// if not: silently ignoring
+		start_receive();
+		return;
+	}
+
 
 	// ???
 	// silently ignore messages not sent from 5353 port
