@@ -11,6 +11,7 @@ class mdns_header {
 
 		unsigned short id() const { return decode(0, 1); }
 		unsigned short flags() const { return decode(2, 3); }
+		bool QR() const { return (rep_[2] & 0xA0); }
 		unsigned short qdcount() const { return decode(4, 5); }
 		unsigned short ancount() const { return decode(6, 7); }
 		unsigned short nscount() const { return decode(8, 9); }

@@ -63,8 +63,8 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_po
 	// at first: not compressed
 
 	service service_;
-	if (mdns_header_.qdcount() > 0) {
-		// answering query
+	if (!mdns_header_.QR()) {
+		// answering query (QR set to 0)
 		mdns_query_end mdns_query_end_;
 		mdns_query_end_.read(buffer, end);
 
@@ -106,8 +106,8 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_po
 	// we haven't send any queries via unicast, so we ignore replies
 	// via unicast. We also silently ignore responces with source port
 	// different than 5353 mDNS port.
-	} else if (mdns_header_.ancount() > 0 && !via_unicast && mdns_port) {
-		// handling response to query
+	} else if (!via_unicast && mdns_port) {
+		// handling response to query (QR set to 1)
 		mdns_answer mdns_answer_;
 		mdns_answer_.read(recv_buffer_, end);
 		if (mdns_answer_.type() == dns_type::A) {
