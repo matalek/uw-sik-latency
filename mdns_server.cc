@@ -81,6 +81,8 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_po
 
 		// check if QU bit in query's class was set. If yes (or if we
 		// received query via unicast), we will send respone via unicast.
+		// For QU we do not send ever multicast response due to the
+		// specification for the task (not so usual mDNS).
 		bool send_via_unicast = via_unicast;
 		if (!via_unicast && ((mdns_query_end_.class_() & 0xA000) || legacy_unicast)) {
 			send_via_unicast = true;
