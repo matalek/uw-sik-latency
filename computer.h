@@ -38,12 +38,12 @@ class computer : public boost::enable_shared_from_this<computer> {
 		void add_service(vector<string>& fqdn, uint32_t ttl) {
 			deb(cout << "Komputer " << name << " " << address<< " serwis " << fqdn[1] << " ttl:" << ttl << "\n";)
 			
-			if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "_local") {
+			if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "local") {
 				opoznienia_service = true;
 				leave_time_opoznienia = get_time() + static_cast<uint64_t>(ttl) * 1000000;
 			}
 			
-			if (fqdn.size() == 4 && fqdn[1] == "_ssh" && fqdn[2] == "_tcp" && fqdn[3] == "_local") {
+			if (fqdn.size() == 4 && fqdn[1] == "_ssh" && fqdn[2] == "_tcp" && fqdn[3] == "local") {
 				ssh_service = true;
 				leave_time_ssh = get_time() + static_cast<uint64_t>(ttl) * 1000000;
 			}

@@ -16,9 +16,9 @@ mdns_server::mdns_server() {
 }
 
 void mdns_server::announce_name() {
-	send_response(dns_type::A, service::UDP, false);
+	send_response(dns_type::A, service::UDP, false, false);
 	if (announce_ssh_service)
-		send_response(dns_type::A, service::TCP, false);
+		send_response(dns_type::A, service::TCP, false, false);
 }
 
 void mdns_server::start_receive() {
@@ -37,19 +37,19 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 	if (!error || error == boost::asio::error::message_size){
 		deb2(cout << "\nodebrałem zapytanie mDNS\n";)
 
-		// silently ignore messages not sent from 5353 port
-		if (remote_endpoint_.port() != MDNS_PORT_NUM) {
-			start_receive();
-			return;
-		}
-		
-		receive_universal(recv_buffer_, false);
+		// if message sent from different port then 5353, we will be
+		// sending legacy unicast response (for queries) or ignore it
+		// (for responses).
+		if (remote_endpoint_.port() == MDNS_PORT_NUM)
+			receive_universal(recv_buffer_, false, true);
+		else
+			receive_universal(recv_buffer_, false, false);
 		
 		start_receive();
 	}
 }
 
-void mdns_server::receive_universal(char* buffer, bool via_unicast) {
+void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_port) {
 	size_t end;
 	
 	stringstream ss;
@@ -68,10 +68,21 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast) {
 		mdns_query_end mdns_query_end_;
 		mdns_query_end_.read(buffer, end);
 
+		// if source port is different than 5353 mDNS port, we send
+		// legacy unicast response 
+		bool legacy_unicast = false;
+		if (!mdns_port) {
+			legacy_unicast = true;
+			if (!via_unicast)
+				receiver_port = remote_endpoint_.port();
+			// we have to repeat ID from query in response
+			id_from_query = mdns_header_.id();
+		}
+
 		// check if QU bit in query's class was set. If yes (or if we
 		// received query via unicast), we will send respone via unicast.
 		bool send_via_unicast = via_unicast;
-		if ((mdns_query_end_.class_() && 0xA000) >> 15) {
+		if (!via_unicast && (((mdns_query_end_.class_() && 0xA000) >> 15) || legacy_unicast)) {
 			send_via_unicast = true;
 			receiver_address = remote_endpoint_.address();
 		}
@@ -84,17 +95,18 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast) {
 		if (NAME_IS_SET) {
 			if (mdns_query_end_.type() == dns_type::A) {
 				if (qname[0] == my_name && (service_ = which_my_service(qname, 1)) != service::NONE) {
-					send_response(dns_type::A, service_, send_via_unicast);
+					send_response(dns_type::A, service_, send_via_unicast, legacy_unicast);
 				}
 			} else if (mdns_query_end_.type() == dns_type::PTR) {
 				if ((service_ = which_my_service(qname, 0)) != service::NONE) {
-					send_response(dns_type::PTR, service_, send_via_unicast);
+					send_response(dns_type::PTR, service_, send_via_unicast, legacy_unicast);
 				}
 			}
 		}
 	// we haven't send any queries via unicast, so we ignore replies
-	// via unicast
-	} else if (mdns_header_.ancount() > 0 && !via_unicast) {
+	// via unicast. We also silently ignore responces with source port
+	// different than 5353 mDNS port.
+	} else if (mdns_header_.ancount() > 0 && !via_unicast && mdns_port) {
 		// handling response to query
 		mdns_answer mdns_answer_;
 		mdns_answer_.read(recv_buffer_, end);
@@ -106,22 +118,30 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast) {
 	}	
 }
 
-void mdns_server::send_response(dns_type type_, service service_, bool send_via_unicast) {
+void mdns_server::send_response(dns_type type_, service service_, bool send_via_unicast, bool legacy_unicast) {
 	deb(cout << "zaczynam wysyłać odpowiedź na mdns\n";)
 	try {
 		udp::endpoint receiver_endpoint;
+
 		if (send_via_unicast)
 			receiver_endpoint.address(receiver_address);
 		else
 			receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
-		receiver_endpoint.port(MDNS_PORT_NUM);
+
+		if (legacy_unicast)
+			receiver_endpoint.port(receiver_port);
+		else
+			receiver_endpoint.port(MDNS_PORT_NUM);
 
 		std::ostringstream oss;
 		std::vector<boost::asio::const_buffer> buffers;
 		
 		// ID, Flags (84 00 for response), QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT
 		mdns_header mdns_header_;
-		mdns_header_.id(0);
+		if (legacy_unicast)
+			mdns_header_.id(id_from_query);
+		else
+			mdns_header_.id(0);
 		mdns_header_.flags(RESPONSE_FLAG);
 		mdns_header_.qdcount(0);
 		mdns_header_.ancount(1);
@@ -129,7 +149,6 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 		mdns_header_.arcount(0);
 		oss << mdns_header_;
 		
-
 		// crete FQDN appropriate for this service
 		vector<string> fqdn = {my_name};
 		if (service_ == service::UDP) {
@@ -139,7 +158,7 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 			fqdn.push_back("_ssh");
 			fqdn.push_back("_tcp");
 		}
-		fqdn.push_back("_local");
+		fqdn.push_back("local");
 
 		// FQDN specified by a list of component strings.		
 		ostringstream oss_fqdn;
@@ -159,9 +178,19 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 
 		mdns_answer mdns_answer_;
 		mdns_answer_.type(type_);
-		mdns_answer_.class_(0x8001);
-		// TTL equals twice as  sending mDNS queries frequency 
-		mdns_answer_.ttl(2 * static_cast<uint32_t>(exploration_time));
+		if (legacy_unicast)
+			// the cache-flush bit MUST NOT be set in legacy unicast responses
+			mdns_answer_.class_(0x0001);
+		else
+			mdns_answer_.class_(0x8001);
+
+		if (!legacy_unicast)
+			// TTL equals twice as much as sending mDNS queries frequency 
+			mdns_answer_.ttl(2 * static_cast<uint32_t>(exploration_time));
+		else
+			 //TTL given in a legacy unicast response SHOULD NOT be
+			 //greater than ten seconds
+			mdns_answer_.ttl(min(2 * static_cast<uint32_t>(exploration_time), static_cast<uint32_t>(10)));
 				
 		if (type_ == dns_type::A) {
 			// IPv4 address record
@@ -198,8 +227,8 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 	// maybe someone announce, that he already uses the name, that we
 	// were trying to use
 	if (!NAME_IS_SET) {
-		vector<string> name1 = {my_name,  "_opoznienia", "_udp", "_local"};
-		vector<string> name2 = {my_name,  "_ssh", "_tcp", "_local"};
+		vector<string> name1 = {my_name,  "_opoznienia", "_udp", "local"};
+		vector<string> name2 = {my_name,  "_ssh", "_tcp", "local"};
 		
 		if (qname == name1 || qname == name2)
 			name_server_->notify();
@@ -249,18 +278,14 @@ void mdns_unicast_server::handle_receive(const boost::system::error_code& error,
 		return;
 	}
 
-
-	// ???
-	// silently ignore messages not sent from 5353 port
-	if (remote_endpoint_.port() != MDNS_PORT_NUM) {
-		start_receive();
-		return;
-	}
-
 	// we can set mdns_server attribute, because from now to sending
 	// actions will execute without any async waiting
 	mdns_server_->receiver_address = remote_endpoint_.address();
-	mdns_server_->receive_universal(recv_buffer_, true);
+	mdns_server_->receiver_port = remote_endpoint_.port();
+	if (remote_endpoint_.port() == MDNS_PORT_NUM)
+		mdns_server_->receive_universal(recv_buffer_, true, true);
+	else
+		mdns_server_->receive_universal(recv_buffer_, true, false);
 
 	start_receive();
 }

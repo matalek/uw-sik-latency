@@ -21,12 +21,12 @@ service which_my_service(vector<string>& fqdn, size_t start) {
 	if (start + 2 < fqdn.size() &&
 		fqdn[start] == "_opoznienia" &&
 		fqdn[start + 1] == "_udp" &&
-		fqdn[start + 2] == "_local")
+		fqdn[start + 2] == "local")
 		return service::UDP;
 	if (announce_ssh_service && start + 2 < fqdn.size() &&
 		fqdn[start] == "_ssh" &&
 		fqdn[start + 1] == "_tcp" &&
-		fqdn[start + 2] == "_local")
+		fqdn[start + 2] == "local")
 		return service::TCP;
 	return NONE;
 }

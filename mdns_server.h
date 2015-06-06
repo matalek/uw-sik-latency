@@ -15,9 +15,10 @@ class mdns_server {
 
 		void announce_name();
 
-		void receive_universal(char* buffer, bool via_unicast);
+		void receive_universal(char* buffer, bool via_unicast, bool mdns_port);
 
 		boost::asio::ip::address receiver_address;
+		uint16_t receiver_port;
 		
 	private:
 		void start_receive();
@@ -27,7 +28,7 @@ class mdns_server {
 
 		// sending response via multicast or unicast (if appropriate
 		// conditions are met)
-		void send_response(dns_type type_, service service_, bool send_via_unicast);
+		void send_response(dns_type type_, service service_, bool send_via_unicast, bool legacy_unicast);
 
 		void handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start);
 
@@ -39,6 +40,7 @@ class mdns_server {
 
 		udp::endpoint remote_endpoint_;
 		char recv_buffer_[BUFFER_SIZE];
+		uint16_t id_from_query;
 };
 
 extern mdns_server* mdns_server_;

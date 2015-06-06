@@ -68,10 +68,10 @@ class mdns_client {
 	private:
 	
 		void ask_for_services() {
-			vector <string> fqdn = { "_opoznienia", "_udp", "_local"};
+			vector <string> fqdn = { "_opoznienia", "_udp", "local"};
 			send_query(dns_type::PTR, fqdn);
 
-			fqdn = { "_ssh", "_tcp", "_local"};
+			fqdn = { "_ssh", "_tcp", "local"};
 			send_query(dns_type::PTR, fqdn);
 			
 			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(exploration_time));
