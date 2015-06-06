@@ -240,8 +240,10 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 	
 	// if not already existing, creating new computer
 	if (!computers.count(address.address())) {
+		deb3(cout << "dodaję nowy komputer\n";)
 		boost::shared_ptr<computer> comp(new computer(address.address(), qname, mdns_answer_.ttl()));
 		computers.insert(make_pair(address.address(), comp));
+		deb3(cout << "dodałem nowy komputer\n";)
 	} else {
 		// maybe we need to update another service
 		computers[address.address()]->add_service(qname, mdns_answer_.ttl());

@@ -47,8 +47,9 @@ using boost::asio::ip::icmp;
 
 #define MY_INDEX "\0x34\0x71\0x71"
 
-#define deb(a)
+#define deb(a) a
 #define deb2(a) a
+#define deb3(a) a
 
 extern uint16_t udp_port_num; // configured by -u option
 extern uint16_t ui_port_num; // configured by -U option
@@ -67,7 +68,6 @@ extern uint32_t my_netmask; // host order
 extern boost::asio::io_service* io_service;
 extern udp::socket* socket_mdns;
 extern udp::socket* socket_mdns_unicast;
-
 
 enum dns_type {
 	A = 1,

@@ -15,7 +15,7 @@ class measurement_server {
 	private:
 	
 		void measure() {
-			deb(cout << "mierzę \n";)
+			deb3(cout << "zaczynam mierzyć \n";)
 			for (auto it = computers.begin(); it != computers.end(); it++) {
 				if (it->second->verify_ttl())
 					it->second->measure();
@@ -23,6 +23,7 @@ class measurement_server {
 					// delete computer, because its TTLs for services
 					// have expired
 					computers.erase(it++);
+				deb3(cout << computers.size() << "\n";)
 			}
 			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(measurement_time));
 			timer_.async_wait(boost::bind(&measurement_server::measure, this));

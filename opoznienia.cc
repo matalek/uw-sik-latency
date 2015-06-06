@@ -193,7 +193,6 @@ int main(int argc, char *argv[]) {
 		// bind to appropriate port
 		socket_mdns_unicast->bind(udp::endpoint(boost::asio::ip::address_v4(my_address), MDNS_PORT_NUM));
 
-
 		mdns_client_ = new mdns_client{};
 		name_server_ = new name_server{};
 		mdns_server_ = new mdns_server{};

@@ -17,7 +17,11 @@ class computer : public boost::enable_shared_from_this<computer> {
 			leave_time_ssh(0),
 			socket_udp(*io_service),
 			socket_tcp(*io_service),
-			socket_icmp(*io_service, icmp::v4()) { // czy nie lepiej jedno?
+			socket_icmp(*io_service, icmp::v4()),
+			udp_sum{0},
+			tcp_sum{0},
+			icmp_sum{0},
+			sequence_number{0} { 
 
 			address = add;
 			name = fqdn[0];
@@ -33,6 +37,13 @@ class computer : public boost::enable_shared_from_this<computer> {
 			remote_tcp_endpoint.port(SSH_PORT_NUM);
 
 			remote_icmp_endpoint.address(boost::asio::ip::address_v4(address));
+		}
+
+		~computer() {
+			deb3(cout << "destruktor dla " << get_address_string() << "\n";)
+			socket_udp.close();
+			socket_tcp.close();
+			socket_icmp.close();
 		}
 
 		void add_service(vector<string>& fqdn, uint32_t ttl) {
@@ -52,6 +63,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 		void measure() {
 			deb(cout << "SSH" << ssh_service << "\n";)
 			deb(cout << "-------" << tcp_times.size() << "\n";)
+			deb3(cout << "Mierzę komputer " << get_address_string() << " " << "\n";)
 			if (opoznienia_service) {
 				measure_udp();
 				measure_icmp();
@@ -119,8 +131,10 @@ class computer : public boost::enable_shared_from_this<computer> {
 				boost::asio::placeholders::bytes_transferred));
 		}
 
-		void handle_send_udp(const boost::system::error_code& /*error*/,
+		void handle_send_udp(const boost::system::error_code& ec/*error*/,
 			std::size_t /*bytes_transferred*/) {
+			if (ec == boost::asio::error::operation_aborted)
+				return;
 			// reading
 			socket_udp.async_receive_from(
 				boost::asio::buffer(recv_buffer_), remote_udp_endpoint,
@@ -130,8 +144,11 @@ class computer : public boost::enable_shared_from_this<computer> {
 			
 		}
 		
-		void handle_receive_udp(const boost::system::error_code& /*error*/,
+		void handle_receive_udp(const boost::system::error_code& ec/*error*/,
 		  std::size_t /*bytes_transferred*/) {
+
+			if (ec == boost::asio::error::operation_aborted)
+				return;
 			// calculating and saving time
 			deb(cout << "odpowiedź na udp\n";)
 
@@ -175,7 +192,10 @@ class computer : public boost::enable_shared_from_this<computer> {
 				boost::asio::placeholders::error));
 		}
 
-		void handle_connect_tcp(const boost::system::error_code& /*error*/) {
+		void handle_connect_tcp(const boost::system::error_code& ec /*error*/) {
+			if (ec == boost::asio::error::operation_aborted)
+				return;
+			
 			// time of receiving answer
 			uint64_t end_time = get_time();
 
@@ -235,12 +255,15 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 			// wait for a reply. We prepare the buffer to receive up to
 			// BUFFER_SIZE of data. Because of simple usage in our
-			// program, this number does not to be very high
+			// program, this number does not need to be very high
 			socket_icmp.async_receive(icmp_reply_buffer.prepare(BUFFER_SIZE),
-			boost::bind(&computer::handle_icmp_receive, this, _2));
+			boost::bind(&computer::handle_icmp_receive, this, boost::asio::placeholders::error, _2));
 		}
 
-		void handle_icmp_receive(std::size_t length) {
+		void handle_icmp_receive(const boost::system::error_code& ec, std::size_t length) {
+			if (ec == boost::asio::error::operation_aborted)
+				return;
+			
 			// the actual number of bytes received is committed to the buffer so that we
 			// can extract it using a std::istream object.
 			icmp_reply_buffer.commit(length);
@@ -249,11 +272,20 @@ class computer : public boost::enable_shared_from_this<computer> {
 			std::istream is(&icmp_reply_buffer);
 			ipv4_header ipv4_hdr;
 			icmp_header icmp_hdr;
-			is >> ipv4_hdr >> icmp_hdr;
+			is >> ipv4_hdr;
 
-			deb(cout << "odebrałem icmp " <<
+			// check if ICMP protocol
+			if (ipv4_hdr.protocol() != 1) {
+				start_icmp_receive();
+				return;
+			}
+			
+			is >> icmp_hdr;
+			
+			deb(cout << "odebrałem icmp dla komputera" << get_address_string() << ": " <<
 				icmp_hdr.sequence_number() << " " << sequence_number << " " <<
-				icmp_hdr.type() << " " << icmp_header::echo_reply << "\n";)
+				icmp_hdr.type() << " " << icmp_header::echo_reply << "\n"
+				<< "z adresu " << ipv4_hdr.source_address().to_string() << "\n";)
 
 			// we can receive all ICMP packets received by the host, so we need to
 			// filter out only the echo replies that match the our identifier and
