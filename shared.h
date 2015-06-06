@@ -62,6 +62,7 @@ extern bool NAME_IS_SET;
 extern string my_name;
 extern uint32_t my_address; // BE order
 extern string my_address_str;
+extern uint32_t my_netmask; // BE order
 
 extern boost::asio::io_service* io_service;
 extern udp::socket* socket_mdns;

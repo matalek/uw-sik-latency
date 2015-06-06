@@ -11,6 +11,7 @@ bool NAME_IS_SET = false;
 string my_name;
 uint32_t my_address; // BE order
 string my_address_str;
+uint32_t my_netmask; // BE order
 
 boost::asio::io_service* io_service;
 udp::socket* socket_mdns;
