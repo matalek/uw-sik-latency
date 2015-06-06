@@ -102,10 +102,18 @@ class computer : public boost::enable_shared_from_this<computer> {
 		// returns, if any service is still valid for this computer
 		bool verify_ttl() {
 			uint64_t time = get_time();
-			if (time >= leave_time_opoznienia)
+			if (time >= leave_time_opoznienia) {
 				opoznienia_service = false;
-			if (time >= leave_time_ssh)
+				udp_times = queue<uint32_t>{};
+				udp_sum = 0;
+				icmp_times = queue<uint32_t>{};
+				icmp_sum = 0;
+			}
+			if (time >= leave_time_ssh) { 
 				ssh_service = false;
+				tcp_times = queue<uint32_t>{};
+				tcp_sum = 0;
+			}
 			return (opoznienia_service || ssh_service);
 		}
 
