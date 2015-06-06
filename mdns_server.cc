@@ -82,7 +82,7 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_po
 		// check if QU bit in query's class was set. If yes (or if we
 		// received query via unicast), we will send respone via unicast.
 		bool send_via_unicast = via_unicast;
-		if (!via_unicast && (((mdns_query_end_.class_() && 0xA000) >> 15) || legacy_unicast)) {
+		if (!via_unicast && ((mdns_query_end_.class_() & 0xA000) || legacy_unicast)) {
 			send_via_unicast = true;
 			receiver_address = remote_endpoint_.address();
 		}
