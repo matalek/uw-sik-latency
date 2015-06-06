@@ -221,7 +221,7 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 }
 
 void mdns_server::handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
-	vector<string> fqdn = read_name(recv_buffer_, start);
+	vector<string> fqdn = read_compressable_name(recv_buffer_, start);
 	mdns_client_->send_query(dns_type::A, fqdn);
 }
 

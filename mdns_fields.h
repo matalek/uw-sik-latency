@@ -25,7 +25,7 @@ class mdns_header {
 		void arcount(unsigned short n) { return encode(10, 11, n); }
 
 		void read(char buffer[]) {
-			memcpy(rep_, buffer, 12);
+			memcpy(rep_, buffer, 12);// TO DO: add checking error (and below)
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const mdns_header& header) {
@@ -168,5 +168,6 @@ class ipv4_address {
 };
 
 extern vector<string> read_name(char buffer[], size_t& start);
+extern vector<string> read_compressable_name(char buffer[], size_t& start);
 
 #endif
