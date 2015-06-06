@@ -53,13 +53,15 @@ void name_server::send_probes(const boost::system::error_code &ec) {
 	
 	// we want to have unique name as far as both services
 	// (opoznienia and ssh) are concerned, so we send a query for
-	// each of this service
+	// each of this service (if we announce ssh service)
 	vector<string> fqdn = {my_name, "_opoznienia", "_udp", "local"};
 	mdns_client_->send_query(dns_type::A, fqdn);
 
-	fqdn = {my_name, "_ssh", "_tcp", "local"};
-	mdns_client_->send_query(dns_type::A, fqdn);
-
+	if (announce_ssh_service) {
+		fqdn = {my_name, "_ssh", "_tcp", "local"};
+		mdns_client_->send_query(dns_type::A, fqdn);
+	}
+	
 	auto probed_name = boost::shared_ptr<string>(new string(my_name));
 
 	timer_.expires_from_now(boost::posix_time::seconds(MAX_DELAY));
