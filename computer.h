@@ -43,7 +43,8 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 		void measure_tcp();
 
-		void handle_connect_tcp(const boost::system::error_code& ec /*error*/);
+		void handle_connect_tcp(boost::shared_ptr<uint64_t> start_time,
+			const boost::system::error_code& ec /*error*/);
 
 		void measure_icmp();
 
@@ -71,8 +72,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 		uint32_t udp_sum;
 		uint32_t tcp_sum;
 		uint32_t icmp_sum;
-
-		uint64_t tcp_start_time;
 };
 
 extern map<uint32_t, boost::shared_ptr<computer> > computers;

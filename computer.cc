@@ -184,26 +184,25 @@ void computer::handle_receive_udp(const boost::system::error_code& ec/*error*/,
 }
 
 void computer::measure_tcp() {
-	// using TCP protocol we can be sure, that we will connect
-	// to computer before trying another connect. Therefore
-	// we can remember only one start time.
-	tcp_start_time = get_time();
+	boost::shared_ptr<uint64_t> start_time(new uint64_t{get_time()});
 	
 	// connect socket to the server
 	socket_tcp.async_connect(remote_tcp_endpoint,
 		boost::bind(&computer::handle_connect_tcp, shared_from_this(),
+		start_time,
 		boost::asio::placeholders::error));
 }
 
-void computer::handle_connect_tcp(const boost::system::error_code& ec /*error*/) {
+void computer::handle_connect_tcp(boost::shared_ptr<uint64_t> start_time,
+	const boost::system::error_code& ec /*error*/) {
 	if (ec == boost::asio::error::operation_aborted)
 		return;
 	
 	// time of receiving answer
 	uint64_t end_time = get_time();
 
-	uint64_t res = end_time - tcp_start_time;
-	deb(cout << "Wynik pomiaru tcp: " << res << " " << tcp_start_time << " " << end_time << "\n";)
+	uint64_t res = end_time - *start_time;
+	deb6(cout << "Wynik pomiaru tcp: " << res << " " << *start_time << " " << end_time << "\n";)
 
 	tcp_times.push(res);
 	tcp_sum += res;

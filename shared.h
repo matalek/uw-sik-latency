@@ -57,7 +57,8 @@ using boost::asio::ip::icmp;
 #define deb2(a)
 #define deb3(a)
 #define deb4(a)
-#define deb5(a) a
+#define deb5(a)
+#define deb6(a) a
 
 extern uint16_t udp_port_num; // configured by -u option
 extern uint16_t ui_port_num; // configured by -U option
