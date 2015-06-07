@@ -10,7 +10,6 @@ computer::computer(uint32_t add, vector<string>& fqdn, uint32_t ttl) :
 	leave_time_opoznienia(0),
 	leave_time_ssh(0),
 	socket_udp(*io_service),
-	socket_tcp(*io_service),
 	udp_sum{0},
 	tcp_sum{0},
 	icmp_sum{0} { 
@@ -23,14 +22,13 @@ computer::computer(uint32_t add, vector<string>& fqdn, uint32_t ttl) :
 	socket_udp.open(udp::v4());
 	remote_udp_endpoint.address(boost::asio::ip::address_v4(address));
 	remote_udp_endpoint.port(udp_port_num);
-	
+
 	remote_tcp_endpoint.address(boost::asio::ip::address_v4(address));
 	remote_tcp_endpoint.port(SSH_PORT_NUM);
 }
 
 computer::~computer() {
 	socket_udp.close();
-	socket_tcp.close();
 }
 
 void computer::add_service(vector<string>& fqdn, uint32_t ttl) {
@@ -173,20 +171,30 @@ void computer::handle_receive_udp(const boost::system::error_code& error,
 void computer::measure_tcp() {
 	boost::shared_ptr<uint64_t> start_time(new uint64_t{get_time()});
 	
+	boost::shared_ptr<tcp::socket> socket_tcp(new tcp::socket{*io_service});
+	socket_tcp->open(tcp::v4());
+	
 	// connect socket to the server
-	socket_tcp.async_connect(remote_tcp_endpoint,
+	socket_tcp->async_connect(remote_tcp_endpoint,
 		boost::bind(&computer::handle_connect_tcp, shared_from_this(),
 		start_time,
+		socket_tcp,
 		boost::asio::placeholders::error));
 }
 
-void computer::handle_connect_tcp(boost::shared_ptr<uint64_t> start_time,
+void computer::handle_connect_tcp(
+	boost::shared_ptr<uint64_t> start_time,
+	boost::shared_ptr<tcp::socket> socket_tcp,
 	const boost::system::error_code& error) {
-	if (error) return;
-	
+
+	if (error) {
+		cout << error.message();
+		return;
+	}
+	socket_tcp->close();
+
 	// time of receiving answer
 	uint64_t end_time = get_time();
-
 	uint64_t res = end_time - *start_time;
 	
 	tcp_times.push(res);

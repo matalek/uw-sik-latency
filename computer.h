@@ -44,6 +44,7 @@ class computer : public boost::enable_shared_from_this<computer> {
 		void measure_tcp();
 
 		void handle_connect_tcp(boost::shared_ptr<uint64_t> start_time,
+			boost::shared_ptr<tcp::socket> socket_tcp,
 			const boost::system::error_code& ec /*error*/);
 
 		void measure_icmp();
@@ -59,7 +60,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 		udp::socket socket_udp;
 		udp::endpoint remote_udp_endpoint;
 
-		tcp::socket socket_tcp;
 		tcp::endpoint remote_tcp_endpoint;
 		
 		char recv_buffer_[BUFFER_SIZE];
