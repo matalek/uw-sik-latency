@@ -9,7 +9,7 @@ vector<string> read_name(char buffer[], size_t& start) {
 			break;
 
 		char name[len + 1];
-		memcpy(name, buffer + start, len); // TO DO: add checking error
+		if (!memcpy(name, buffer + start, len)) syserr("memcpy");
 		name[len] = 0;
 		start += len;
 		res.push_back(name);
@@ -41,7 +41,7 @@ vector<string> read_compressable_name(char buffer[], size_t& start) {
 		}
 
 		char name[len + 1];
-		memcpy(name, buffer + start, len); // TO DO: add checking error
+		if (!memcpy(name, buffer + start, len)) syserr("memcpy");
 		name[len] = 0;
 		start += len;
 		res.push_back(name);

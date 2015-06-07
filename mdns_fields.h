@@ -25,7 +25,7 @@ class mdns_header {
 		void arcount(unsigned short n) { return encode(10, 11, n); }
 
 		void read(char buffer[]) {
-			memcpy(rep_, buffer, 12);// TO DO: add checking error (and below)
+			if (!memcpy(rep_, buffer, 12)) syserr("memcpy");
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const mdns_header& header) {
@@ -67,7 +67,7 @@ class mdns_answer {
 		}
 
 		void read(char buffer[], size_t& start) {
-			memcpy(rep_, buffer + start, 10);
+			if (!memcpy(rep_, buffer + start, 10)) syserr("memcpy");
 			start += 10;
 		}
 
@@ -112,7 +112,7 @@ class mdns_query_end {
 		}
 
 		void read(char buffer[], size_t& start) {
-			memcpy(rep_, buffer + start, 4);
+			if (!memcpy(rep_, buffer + start, 4)) syserr("memcpy");
 			start += 4;
 		}
 
@@ -144,7 +144,7 @@ class ipv4_address {
 		}
 
 		void read(char buffer[], size_t& start) {
-			memcpy(rep_, buffer + start, 4);
+			if (!memcpy(rep_, buffer + start, 4)) syserr("memcpy");
 			start += 4;
 		}
 

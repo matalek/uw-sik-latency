@@ -1,5 +1,8 @@
-/*
- * Before running program execute:
+/* 
+ * Aleksander Matusiak
+ * Big task for Computer networks
+ * 
+ *  Before running program execute:
  * sudo setcap cap_net_raw+eip ./opoznienia
  * in order to enable root previlages to create raw sockets.
  *
@@ -163,16 +166,16 @@ int main(int argc, char *argv[]) {
 	deb2(cout << udp_port_num << " " << ui_port_num << " " << measurement_time << " " << exploration_time << " " << ui_refresh_time
 		<< " " << static_cast<int>(announce_ssh_service) << "\n";)
 
-
-	// creating thread for UDP delay server
-	std::thread udp_delay_server_thread(udp_delay_server);
-
-	set_candidate_name();
-	get_address();
-	deb(cout << "Adres ip: " << my_address << "\n";)
-	
-	
 	try {
+
+		// creating thread for UDP delay server
+		std::thread udp_delay_server_thread(udp_delay_server);
+		udp_delay_server_thread.detach();
+
+		set_candidate_name();
+		get_address();
+		deb(cout << "Adres ip: " << my_address << "\n";)
+	
 		io_service = new boost::asio::io_service();
 
 		// creating tcp server for ui interface
@@ -211,17 +214,17 @@ int main(int argc, char *argv[]) {
 		measurement_server measurement_server{};
 		
 		io_service->run();
+
+		free(mdns_server_);
+		free(mdns_client_);
+		free(name_server_);
+		free(socket_mdns);
+		free(io_service);
+		
 	} catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
+		return 1;
 	}
-
-	//~ udp_delay_server_thread.join(); 
-
-	free(mdns_server_);
-	free(mdns_client_);
-	free(name_server_);
-	free(socket_mdns);
-	free(io_service);
 	
 	return 0;
 }
