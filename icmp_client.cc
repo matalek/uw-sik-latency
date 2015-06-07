@@ -1,10 +1,14 @@
 #include "shared.h"
 #include "icmp_client.h"
 #include "computer.h"
+#include "drop_to_nobody.h"
 
 icmp_client::icmp_client() :
 	socket_icmp(*io_service, icmp::v4()),
-	sequence_number{0}  { }
+	sequence_number{0}  {
+
+	drop_to_nobody();
+}
 
 void icmp_client::measure(uint32_t address) {
 	// sending index number and group number

@@ -218,7 +218,9 @@ int main(int argc, char *argv[]) {
 		free(mdns_server_);
 		free(mdns_client_);
 		free(name_server_);
+		free(icmp_client_);
 		free(socket_mdns);
+		free(socket_mdns_unicast);
 		free(io_service);
 		
 	} catch (std::exception& e) {
