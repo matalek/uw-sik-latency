@@ -25,7 +25,12 @@
  * - we display data in microsecunds, because for normal use this is
  * the most satisfactory time unit. However, for bigger delays, we
  * may want to display data in milliseconds - then you need to uncomment
- * defining macro MILLI_SECONDS.
+ * defining macro MILLI_SECONDS in shared.h.
+ * - by default, packets (namely PTR responses) are not compressed, due
+ * to compatibility with other students' implementations (which may not
+ * support compression). However, compression for this packets can be
+ * turned on by uncommenting the definition of COMPRESS_PTR macro in
+ * shared.h.
  */ 
 
 // to get IP address
@@ -43,9 +48,6 @@
 #include "udp_server.h"
 #include "measurement_server.h"
 #include "ui.h"
-
-// uncomment, if you want to display data in milliseconds
-// #define MILLI_SECONDS
 
 void get_address() {
 	int fd;

@@ -202,15 +202,16 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 			oss << mdns_answer_;
 			oss << address_;
 		} else { // PTR
-			mdns_answer_.length(fqdn[0].size() + 2); //oss_fqdn.str().length());
-			oss << mdns_answer_;
-			char len = static_cast<char>(fqdn[0].size());
-			oss << len << fqdn[0];
-			char c = 0xC0;
-			oss << c;
-			c = 12;
-			oss << c;
-			//oss << (oss_fqdn.str());
+			#ifdef COMPRESS_PTR
+				mdns_answer_.length(fqdn[0].size() + 2); //oss_fqdn.str().length());
+				oss << mdns_answer_;
+				oss << static_cast<char>(fqdn[0].size()) << fqdn[0];
+				oss << static_cast<char>(0xC0) << static_cast<char>(12);
+			#else
+				mdns_answer_.length(oss_fqdn.str().length());
+				oss << mdns_answer_;
+				oss << (oss_fqdn.str());
+			#endif
 		}
 
 		boost::shared_ptr<std::string> message(new std::string(oss.str()));

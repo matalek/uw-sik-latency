@@ -34,6 +34,13 @@ using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 using boost::asio::ip::icmp;
 
+// uncomment, if you want to display data in milliseconds
+// #define MILLI_SECONDS
+
+// uncomment, if you want to compress PTR responses
+// #define COMPRESS_PTR
+
+
 #define MAX_DELAY 5 // to change
 
 #define MDNS_PORT_NUM 5353
