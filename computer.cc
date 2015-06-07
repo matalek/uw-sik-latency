@@ -149,12 +149,12 @@ void computer::handle_send_udp(const boost::system::error_code& error,
 void computer::handle_receive_udp(const boost::system::error_code& error,
   std::size_t size /*bytes_transferred*/) {
 
-	if (error || size > BUFFER_SIZE) return;
+	if (error || size > BUFFER_SIZE || size < MIN_UDP_SIZE) return;
 	// calculating and saving time
 	deb(cout << "odpowiedź na udp\n";)
 
 	uint64_t val;
-	memcpy((char *)&val, recv_buffer_, 8);
+	if (!memcpy((char *)&val, recv_buffer_, 8)) syserr("memcpy");
 	uint64_t start_time = be64toh(val);
 	
 	// time of receiving answer
@@ -166,7 +166,7 @@ void computer::handle_receive_udp(const boost::system::error_code& error,
 	// However, it is still possibly to write this data
 	// by uncommenting following lines.
 
-	// memcpy((char *)&val, recv_buffer_ + 8, 8);
+	// if (!memcpy((char *)&val, recv_buffer_ + 8, 8)) syserr("memcpy");
 	// uint64_t middle_time = be64toh(val);
 	// cerr << start_time << " " << middle_time << "\n";
 

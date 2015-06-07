@@ -3,6 +3,18 @@
 
 #include "shared.h"
 
+class too_small_exception : exception {
+	virtual const char* what() const throw() {
+		return "Too small mDNS message";
+	}
+};
+
+class bad_compression_exception : exception {
+	virtual const char* what() const throw() {
+		return "Wrongly compressed message";
+	}
+};
+
 class mdns_header {
 
 	public:
@@ -66,7 +78,8 @@ class mdns_answer {
 			return os.write(reinterpret_cast<const char*>(answer.rep_), 10);
 		}
 
-		void read(char buffer[], size_t& start) {
+		void read(char buffer[], size_t& start, size_t size) {
+			if (start + 10 > size) throw too_small_exception{};
 			if (!memcpy(rep_, buffer + start, 10)) syserr("memcpy");
 			start += 10;
 		}
@@ -111,7 +124,8 @@ class mdns_query_end {
 			return os.write(reinterpret_cast<const char*>(end.rep_), 4);
 		}
 
-		void read(char buffer[], size_t& start) {
+		void read(char buffer[], size_t& start, size_t size) {
+			if (start + 4 > size) throw too_small_exception{};
 			if (!memcpy(rep_, buffer + start, 4)) syserr("memcpy");
 			start += 4;
 		}
@@ -143,7 +157,8 @@ class ipv4_address {
 			return os.write(reinterpret_cast<const char*>(add.rep_), 4);
 		}
 
-		void read(char buffer[], size_t& start) {
+		void read(char buffer[], size_t& start, size_t size) {
+			if (start + 4 > size) throw too_small_exception{};
 			if (!memcpy(rep_, buffer + start, 4)) syserr("memcpy");
 			start += 4;
 		}
@@ -167,7 +182,7 @@ class ipv4_address {
 		unsigned char rep_[4];
 };
 
-extern vector<string> read_name(char buffer[], size_t& start);
-extern vector<string> read_compressable_name(char buffer[], size_t& start);
+extern vector<string> read_name(char buffer[], size_t& start, size_t size);
+extern vector<string> read_compressable_name(char buffer[], size_t& start, size_t size);
 
 #endif

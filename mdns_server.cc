@@ -30,41 +30,50 @@ void mdns_server::start_receive() {
 		boost::asio::placeholders::bytes_transferred));
 }
 
-
-
 void mdns_server::handle_receive(const boost::system::error_code& error,
   std::size_t size /*bytes_transferred*/) {
-	if (error || size > BUFFER_SIZE) return; // || error == boost::asio::error::message_size){
+	if (error || size > BUFFER_SIZE || size < MIN_MDNS_SIZE) {
+		start_receive();
+		return;
+	}
 	deb2(cout << "\nodebrałem zapytanie mDNS\n";)
 
 	// if message sent from different port then 5353, we will be
 	// sending legacy unicast response (for queries) or ignore it
 	// (for responses).
 	if (remote_endpoint_.port() == MDNS_PORT_NUM)
-		receive_universal(recv_buffer_, false, true);
+		receive_universal(recv_buffer_, size, false, true);
 	else
-		receive_universal(recv_buffer_, false, false);
+		receive_universal(recv_buffer_, size, false, false);
 	
 	start_receive();
 }
 
-void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_port) {
+void mdns_server::receive_universal(char* buffer, size_t size, bool via_unicast, bool mdns_port) {
 	size_t end;
 	
 	mdns_header mdns_header_;
 	mdns_header_.read(buffer);
 	end = 12; // we have read 12 bytes so far
-	
-	vector<string> qname = read_name(buffer, end);
-	
-	// at first: not compressed
 
+	vector<string> qname;
+	try {
+		qname = read_name(buffer, end, size);
+	} catch (too_small_exception& ex) {
+		return;
+	}
+		
 	service service_;
 	if (!mdns_header_.QR()) {
+
 		// answering query (QR set to 0)
 		mdns_query_end mdns_query_end_;
-		mdns_query_end_.read(buffer, end);
-
+		try {
+			mdns_query_end_.read(buffer, end, size);
+		} catch (too_small_exception& ex) {
+			return;
+		}
+		
 		// if source port is different than 5353 mDNS port, we send
 		// legacy unicast response 
 		bool legacy_unicast = false;
@@ -108,13 +117,58 @@ void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_po
 	} else if (!via_unicast && mdns_port) {
 		// handling response to query (QR set to 1)
 		mdns_answer mdns_answer_;
-		mdns_answer_.read(recv_buffer_, end);
+		mdns_answer_.read(recv_buffer_, end, size);
 		if (mdns_answer_.type() == dns_type::A) {
-			handle_a_response(mdns_answer_, qname, end);
+			handle_a_response(mdns_answer_, qname, end, size);
 		} else if (mdns_answer_.type() == dns_type::PTR) {
-			handle_ptr_response(mdns_answer_, qname, end);
+			handle_ptr_response(mdns_answer_, qname, end, size);
 		}
 	}	
+}
+
+void mdns_server::handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start, size_t size) {
+	vector<string> fqdn;
+	try {
+		fqdn = read_compressable_name(recv_buffer_, start, size);	
+	} catch (too_small_exception& ex) {
+		return;
+	} catch (bad_compression_exception& ex) {
+		return;
+	}
+	mdns_client_->send_query(dns_type::A, fqdn);
+}
+
+void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start, size_t size) {
+	// maybe someone announce, that he already uses the name, that we
+	// were trying to use
+	if (!NAME_IS_SET) {
+		vector<string> name1 = {my_name,  "_opoznienia", "_udp", "local"};
+		vector<string> name2 = {my_name,  "_ssh", "_tcp", "local"};
+		
+		if (qname == name1 || qname == name2)
+			name_server_->notify();
+	}
+
+	if (mdns_answer_.length() != 4) return;
+	
+	// getting IP address
+	ipv4_address address;
+	try {
+		address.read(recv_buffer_, start, size);
+	} catch (too_small_exception& ex) {
+		return;
+	}
+	
+	// if not already existing, creating new computer
+	if (!computers.count(address.address())) {
+		deb3(cout << "dodaję nowy komputer\n";)
+		boost::shared_ptr<computer> comp(new computer(address.address(), qname, mdns_answer_.ttl()));
+		computers.insert(make_pair(address.address(), comp));
+		deb3(cout << "dodałem nowy komputer\n";)
+	} else {
+		// maybe we need to update another service
+		computers[address.address()]->add_service(qname, mdns_answer_.ttl());
+	}
 }
 
 void mdns_server::send_response(dns_type type_, service service_, bool send_via_unicast, bool legacy_unicast) {
@@ -255,40 +309,7 @@ void mdns_server::send_ptr_response(boost::shared_ptr<string> message,
 	
 }
 
-void mdns_server::handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
-	vector<string> fqdn = read_compressable_name(recv_buffer_, start);	
-	mdns_client_->send_query(dns_type::A, fqdn);
-}
 
-
-
-
-void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
-	// maybe someone announce, that he already uses the name, that we
-	// were trying to use
-	if (!NAME_IS_SET) {
-		vector<string> name1 = {my_name,  "_opoznienia", "_udp", "local"};
-		vector<string> name2 = {my_name,  "_ssh", "_tcp", "local"};
-		
-		if (qname == name1 || qname == name2)
-			name_server_->notify();
-	}
-	
-	// getting IP address
-	ipv4_address address;
-	address.read(recv_buffer_, start);
-	
-	// if not already existing, creating new computer
-	if (!computers.count(address.address())) {
-		deb3(cout << "dodaję nowy komputer\n";)
-		boost::shared_ptr<computer> comp(new computer(address.address(), qname, mdns_answer_.ttl()));
-		computers.insert(make_pair(address.address(), comp));
-		deb3(cout << "dodałem nowy komputer\n";)
-	} else {
-		// maybe we need to update another service
-		computers[address.address()]->add_service(qname, mdns_answer_.ttl());
-	}
-}
 
 void mdns_server::handle_send(//boost::shared_ptr<std::string> /*message*/,
   const boost::system::error_code& /*error*/,
@@ -312,7 +333,7 @@ void mdns_unicast_server::start_receive() {
 void mdns_unicast_server::handle_receive(const boost::system::error_code& error,
   std::size_t size /*bytes_transferred*/) {
 
-	if (error || size > BUFFER_SIZE) {
+	if (error || size > BUFFER_SIZE || size < MIN_MDNS_SIZE) {
 		start_receive();
 		return;
 	}
@@ -331,9 +352,9 @@ void mdns_unicast_server::handle_receive(const boost::system::error_code& error,
 	mdns_server_->receiver_address = remote_endpoint_.address();
 	mdns_server_->receiver_port = remote_endpoint_.port();
 	if (remote_endpoint_.port() == MDNS_PORT_NUM)
-		mdns_server_->receive_universal(recv_buffer_, true, true);
+		mdns_server_->receive_universal(recv_buffer_, size, true, true);
 	else
-		mdns_server_->receive_universal(recv_buffer_, true, false);
+		mdns_server_->receive_universal(recv_buffer_, size, true, false);
 
 	start_receive();
 }

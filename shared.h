@@ -55,6 +55,9 @@ using boost::asio::ip::icmp;
 #define ICMP_ID 0x13
 #define RESPONSE_FLAG 0x8400
 
+#define MIN_UDP_SIZE 16
+#define MIN_MDNS_SIZE 12
+
 #define MY_INDEX "\0x34\0x71\0x71"
 
 #define deb(a)

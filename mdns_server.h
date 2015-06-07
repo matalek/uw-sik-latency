@@ -15,7 +15,7 @@ class mdns_server {
 
 		void announce_name();
 
-		void receive_universal(char* buffer, bool via_unicast, bool mdns_port);
+		void receive_universal(char* buffer, size_t size, bool via_unicast, bool mdns_port);
 
 		boost::asio::ip::address receiver_address;
 		uint16_t receiver_port;
@@ -34,9 +34,9 @@ class mdns_server {
 			boost::shared_ptr<udp::endpoint> receiver_endpoint, 
 			const boost::system::error_code &ec);
 		
-		void handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start);
+		void handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start, size_t size);
 
-		void handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start);
+		void handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start, size_t size);
 
 		void handle_send(//boost::shared_ptr<std::string> /*message*/,
 		  const boost::system::error_code& /*error*/,
