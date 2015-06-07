@@ -14,10 +14,11 @@ class measurement_server {
 	private:
 	
 		void measure() {
-			for (auto it = computers.begin(); it != computers.end(); it++) {
-				if (it->second->verify_ttl())
+			for (auto it = computers.begin(); it != computers.end();) {
+				if (it->second->verify_ttl()) {
 					it->second->measure();
-				else
+					it++;
+				} else
 					// delete computer, because its TTLs for services
 					// have expired
 					computers.erase(it++);
