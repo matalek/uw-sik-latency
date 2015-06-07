@@ -35,7 +35,8 @@ vector<string> read_compressable_name(char buffer[], size_t& start) {
 		if ((len & 0xC0) ==  0xC0) {
 			compression_occured = true;
 			real_end = start + 2;
-			start = ((len & 0x3F) << 8) + buffer[start + 1];
+			start = ((len & 0x3F) << 8) + buffer[start];
+			deb4(cout << "kompresja do " << static_cast<int>(start) << "\n";)
 			continue;
 		}
 

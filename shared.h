@@ -47,9 +47,9 @@ using boost::asio::ip::icmp;
 
 #define MY_INDEX "\0x34\0x71\0x71"
 
-#define deb(a) a
-#define deb2(a) a
-#define deb3(a) a
+#define deb(a)
+#define deb2(a)
+#define deb3(a)
 #define deb4(a) a
 
 extern uint16_t udp_port_num; // configured by -u option
