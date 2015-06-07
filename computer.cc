@@ -17,6 +17,7 @@ computer::computer(uint32_t add, vector<string>& fqdn, uint32_t ttl) :
 
 	address = add;
 	name = fqdn[0];
+	add_service(fqdn, ttl);
 
 	// creating sockets for measurement
 	socket_udp.open(udp::v4());
