@@ -19,9 +19,14 @@
 using boost::asio::ip::udp;
 using boost::asio::ip::tcp;
 
-// out of 80: 15 reserved for IP address and 17 (= 3*  5 + 2) for
-// printing data 
-#define FREE_SPACES 43
+// out of 80: 15 reserved for IP address and 17 (= 3 *  5 + 2; for
+// milliseconds) or 26 (= 3 * 8 + 2; for microseconds) for
+// printing data
+#ifdef MILLI_SECONDS
+	#define FREE_SPACES 48
+#else
+	#define FREE_SPACES 39
+#endif
 
 class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 	public:
@@ -49,33 +54,51 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 
 		void refresh() {
 			lines.clear();
+			uint32_t max_avg_avg = 0;
+			
+			// calculating maximal average delay
 			for (auto it = computers.begin(); it != computers.end(); it++) {
-				std::ostringstream oss;
-
 				uint32_t avg[] = {it->second->get_udp_average(),
 					it->second->get_tcp_average(),
 					it->second->get_icmp_average()};
 
 				uint32_t sum = 0;
 				uint8_t cnt = 0;
-
+				
 				for (int i = 0; i < 3; i++)
 					if (avg[i]) {
 						sum += avg[i];
 						cnt++;
 					}
 
-				if (!sum)
-					// not yet any delay measured
-					continue;
-					
-				uint8_t spaces;
-				uint32_t avg_avg = MAX_DELAY * 1000;
 				if (cnt) {
-					avg_avg = sum / cnt;
-					spaces =  static_cast<uint8_t>((avg_avg * FREE_SPACES)/ (MAX_DELAY * 1000));
-				} else
-					spaces = FREE_SPACES;
+					uint32_t avg_avg = sum / cnt;
+					max_avg_avg = max(max_avg_avg, avg_avg);
+				}
+			}
+			for (auto it = computers.begin(); it != computers.end(); it++) {
+				std::ostringstream oss;
+
+				uint32_t avg[] = {it->second->get_udp_average(),
+					it->second->get_tcp_average(),
+					it->second->get_icmp_average()};				
+
+				uint32_t sum = 0;
+				uint8_t cnt = 0;
+				
+				for (int i = 0; i < 3; i++)
+					if (avg[i]) {
+						sum += avg[i];
+						cnt++;
+					}
+					
+				if (!cnt)
+					// not yet any delayed measured
+					continue;
+				
+				uint32_t avg_avg = sum / cnt;
+
+				uint8_t spaces = FREE_SPACES * avg_avg / max_avg_avg;
 				
 				oss << it->second->get_address_string();
 
@@ -83,9 +106,13 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 					oss << " ";
 
 				for (int i = 0; i < 3; i++) {
-					if (avg[i])
-						oss << avg[i];
-					else
+					if (avg[i]) {
+						#ifdef MILLI_SECONDS
+							oss << static_cast<uint32_t>(avg[i] / 1000);
+						#else
+							oss << avg[i];
+						#endif
+					} else
 						oss << "-";
 					if (i != 3)
 						oss << " ";
