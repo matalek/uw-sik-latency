@@ -48,6 +48,8 @@
 #include "udp_server.h"
 #include "measurement_server.h"
 #include "ui.h"
+#include "computer.h"
+#include "icmp_client.h"
 
 void get_address() {
 	int fd;
@@ -205,6 +207,7 @@ int main(int argc, char *argv[]) {
 		name_server_ = new name_server{};
 		mdns_server_ = new mdns_server{};
 		mdns_unicast_server_ = new mdns_unicast_server{};
+		icmp_client_ = new icmp_client{};
 		measurement_server measurement_server{};
 		
 		io_service->run();

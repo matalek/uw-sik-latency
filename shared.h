@@ -21,7 +21,6 @@
 #include <map>
 #include <queue>
 
-#include "boost/program_options.hpp"
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/bind.hpp>
@@ -57,7 +56,8 @@ using boost::asio::ip::icmp;
 #define deb(a)
 #define deb2(a)
 #define deb3(a)
-#define deb4(a) a
+#define deb4(a)
+#define deb5(a) a
 
 extern uint16_t udp_port_num; // configured by -u option
 extern uint16_t ui_port_num; // configured by -U option

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-map<uint32_t, boost::shared_ptr<computer> > computers;
+
 mdns_server* mdns_server_;
 mdns_unicast_server* mdns_unicast_server_;
 
