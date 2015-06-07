@@ -81,8 +81,7 @@ void icmp_client::handle_icmp_receive(const boost::system::error_code& ec, std::
 	
 	deb5(cout << "odebrałem icmp " <<
 		icmp_hdr.sequence_number() << " " << sequence_number << " " <<
-		icmp_hdr.type() << " " << icmp_header::echo_reply << "\n"
-		<< "z adresu " << ipv4_hdr.source_address().to_string() << "\n";)
+		static_cast<int>(icmp_hdr.type()) << "z adresu " << ipv4_hdr.source_address().to_string() << "\n";)
 
 	uint32_t address = ipv4_hdr.source_address().to_ulong();
 
