@@ -80,8 +80,6 @@ void set_candidate_name() {
 	// dodać obsługę błędu
 	char hostname[HOSTNAME_SIZE];
 	gethostname(hostname, HOSTNAME_SIZE);
-
-	deb(printf("hostname: %s\n", hostname);)
 	my_name = hostname;
 }
 
@@ -163,9 +161,6 @@ int main(int argc, char *argv[]) {
 				abort();
 		}
 
-	deb2(cout << udp_port_num << " " << ui_port_num << " " << measurement_time << " " << exploration_time << " " << ui_refresh_time
-		<< " " << static_cast<int>(announce_ssh_service) << "\n";)
-
 	try {
 
 		// creating thread for UDP delay server
@@ -174,8 +169,7 @@ int main(int argc, char *argv[]) {
 
 		set_candidate_name();
 		get_address();
-		deb(cout << "Adres ip: " << my_address << "\n";)
-	
+
 		io_service = new boost::asio::io_service();
 
 		// creating tcp server for ui interface

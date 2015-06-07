@@ -16,8 +16,6 @@ void udp_delay_server() {
 			boost::system::error_code error;
 			socket.receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
 
-			deb(cout << be64toh(recv_buf[0]) << "\n";)
-
 			if (error && error != boost::asio::error::message_size)
 				throw boost::system::system_error(error);
 

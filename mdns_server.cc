@@ -22,7 +22,6 @@ void mdns_server::announce_name() {
 }
 
 void mdns_server::start_receive() {
-	deb(cout << "czekam...\n";)
 	socket_mdns->async_receive_from(
 		boost::asio::buffer(recv_buffer_), remote_endpoint_,
 		boost::bind(&mdns_server::handle_receive, this,
@@ -36,8 +35,7 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 		start_receive();
 		return;
 	}
-	deb2(cout << "\nodebrałem zapytanie mDNS\n";)
-
+	
 	// if message sent from different port then 5353, we will be
 	// sending legacy unicast response (for queries) or ignore it
 	// (for responses).
@@ -94,9 +92,6 @@ void mdns_server::receive_universal(char* buffer, size_t size, bool via_unicast,
 			send_via_unicast = true;
 			receiver_address = remote_endpoint_.address();
 		}
-
-		deb2(if (send_via_unicast)
-			cout << "wysyłam przez unicast\n";)
 		
 		// when our name is not set, we do not want to
 		// be visible for network
@@ -161,10 +156,8 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 	
 	// if not already existing, creating new computer
 	if (!computers.count(address.address())) {
-		deb3(cout << "dodaję nowy komputer\n";)
 		boost::shared_ptr<computer> comp(new computer(address.address(), qname, mdns_answer_.ttl()));
 		computers.insert(make_pair(address.address(), comp));
-		deb3(cout << "dodałem nowy komputer\n";)
 	} else {
 		// maybe we need to update another service
 		computers[address.address()]->add_service(qname, mdns_answer_.ttl());
@@ -172,8 +165,6 @@ void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qn
 }
 
 void mdns_server::send_response(dns_type type_, service service_, bool send_via_unicast, bool legacy_unicast) {
-	deb(cout << "zaczynam wysyłać odpowiedź na mdns\n";)
-	
 	udp::endpoint receiver_endpoint;
 
 	if (send_via_unicast)
@@ -216,7 +207,6 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 	// FQDN specified by a list of component strings.		
 	ostringstream oss_fqdn;
 	for (size_t i = 0; i < fqdn.size(); i++) {
-		deb(cout << "!!!" << fqdn[i].length() << " " << fqdn[i] << "\n";)
 
 		uint8_t len = static_cast<uint8_t>(fqdn[i].length());
 		oss_fqdn << len << fqdn[i];
@@ -280,8 +270,6 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 		srand(time(NULL));
 		uint8_t wait_time = 20 + (rand() % 101);
 
-		deb4(cout << "czekam przez " << static_cast<int>(wait_time) << "\n";)
-
 		boost::shared_ptr<std::string> message(new std::string(oss.str()));
 		boost::shared_ptr<udp::endpoint> receiver_endpoint_to_send(new udp::endpoint(receiver_endpoint));
 
@@ -292,24 +280,18 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 			receiver_endpoint_to_send,
 			boost::asio::placeholders::error));	
 	}
-	
-	deb(cout << "wysłano odpowiedź na mdns \n";)
 }
 
 void mdns_server::send_ptr_response(boost::shared_ptr<string> message,
 	boost::shared_ptr<udp::endpoint> receiver_endpoint, 
 	const boost::system::error_code &ec) {
 
-	deb4(cout << "skończyłem czekać\n";)
 
 	socket_mdns->async_send_to(boost::asio::buffer(*message), *receiver_endpoint,
 		  boost::bind(&mdns_server::handle_send, this,
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
-	
 }
-
-
 
 void mdns_server::handle_send(//boost::shared_ptr<std::string> /*message*/,
   const boost::system::error_code& /*error*/,
@@ -321,8 +303,6 @@ mdns_unicast_server::mdns_unicast_server() {
 }
 
 void mdns_unicast_server::start_receive() {
-	deb(cout << "czekam na unikaście...\n";)
-
 	socket_mdns_unicast->async_receive_from(
 		boost::asio::buffer(recv_buffer_), remote_endpoint_,
 		boost::bind(&mdns_unicast_server::handle_receive, this,
@@ -337,8 +317,6 @@ void mdns_unicast_server::handle_receive(const boost::system::error_code& error,
 		start_receive();
 		return;
 	}
-	  
-	deb2(cout << "\nodebrałem zapytanie mDNS przez unicasta\n";)
 
 	// checking, if from local network
 	if ((remote_endpoint_.address().to_v4().to_ulong() & my_netmask) != (my_address & my_netmask)) {

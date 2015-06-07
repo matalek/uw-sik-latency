@@ -17,8 +17,6 @@ computer::computer(uint32_t add, vector<string>& fqdn, uint32_t ttl) :
 
 	address = add;
 	name = fqdn[0];
-	add_service(fqdn, ttl);
-	deb(cout << "Dodaję komputer " << name << " " << address<< "\n";)
 
 	// creating sockets for measurement
 	socket_udp.open(udp::v4());
@@ -30,14 +28,11 @@ computer::computer(uint32_t add, vector<string>& fqdn, uint32_t ttl) :
 }
 
 computer::~computer() {
-	deb3(cout << "destruktor dla " << get_address_string() << "\n";)
 	socket_udp.close();
 	socket_tcp.close();
 }
 
 void computer::add_service(vector<string>& fqdn, uint32_t ttl) {
-	deb(cout << "Komputer " << name << " " << address<< " serwis " << fqdn[1] << " ttl:" << ttl << "\n";)
-	
 	if (fqdn.size() == 4 && fqdn[1] == "_opoznienia" && fqdn[2] == "_udp" && fqdn[3] == "local") {
 		opoznienia_service = true;
 		leave_time_opoznienia = get_time() + static_cast<uint64_t>(ttl) * 1000000;
@@ -50,9 +45,6 @@ void computer::add_service(vector<string>& fqdn, uint32_t ttl) {
 }
 
 void computer::measure() {
-	deb(cout << "SSH" << ssh_service << "\n";)
-	deb(cout << "-------" << tcp_times.size() << "\n";)
-	deb3(cout << "Mierzę komputer " << get_address_string() << " " << "\n";)
 	if (opoznienia_service) {
 		measure_udp();
 		measure_icmp();
@@ -125,8 +117,6 @@ void computer::measure_udp() {
 
 	// creating message
 	boost::shared_ptr<vector<uint64_t> > message(new vector<uint64_t>{htobe64(time)});
-		
-	deb(cout << "wysyłam pomiar udp\n";)
 
 	socket_udp.async_send_to(boost::asio::buffer(*message), remote_udp_endpoint,
 		boost::bind(&computer::handle_send_udp, this,
@@ -150,9 +140,8 @@ void computer::handle_receive_udp(const boost::system::error_code& error,
   std::size_t size /*bytes_transferred*/) {
 
 	if (error || size > BUFFER_SIZE || size < MIN_UDP_SIZE) return;
+	
 	// calculating and saving time
-	deb(cout << "odpowiedź na udp\n";)
-
 	uint64_t val;
 	if (!memcpy((char *)&val, recv_buffer_, 8)) syserr("memcpy");
 	uint64_t start_time = be64toh(val);
@@ -171,7 +160,6 @@ void computer::handle_receive_udp(const boost::system::error_code& error,
 	// cerr << start_time << " " << middle_time << "\n";
 
 	uint64_t res = end_time - start_time;
-	deb(cout << "Wynik pomiaru udp: " << res << " " << start_time << " " << end_time << "\n";)
 
 	udp_times.push(res);
 	udp_sum += res;
@@ -199,8 +187,7 @@ void computer::handle_connect_tcp(boost::shared_ptr<uint64_t> start_time,
 	uint64_t end_time = get_time();
 
 	uint64_t res = end_time - *start_time;
-	deb6(cout << "Wynik pomiaru tcp: " << res << " " << *start_time << " " << end_time << "\n";)
-
+	
 	tcp_times.push(res);
 	tcp_sum += res;
 	if (tcp_times.size() > 10) {

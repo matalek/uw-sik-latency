@@ -17,7 +17,6 @@ name_server::name_server() : name(my_name), number(1),
 }
 
 void name_server::notify() {
-	deb(cout << "notify \n";)
 	number++;
 	send_query();
 }
@@ -29,8 +28,6 @@ void name_server::send_query() {
 	ss << number;
 	if (number > 1)
 		my_name += "(" + ss.str() + ")";
-
-	deb2(cout << "wysyłam zapytanie o nazwy " << my_name << "\n";)
 
 	// according to RFC 6762, chapter 8.1, we should wait for random
 	// number of milisecond (0 - 250) before probing. Although we do
@@ -48,8 +45,6 @@ void name_server::send_query() {
 }
 
 void name_server::send_probes(const boost::system::error_code &ec) {
-	deb2(cout << "wysyłam próbki\n";)
-	
 	// we want to have unique name as far as both services
 	// (opoznienia and ssh) are concerned, so we send a query for
 	// each of this service (if we announce ssh service)
@@ -71,7 +66,6 @@ void name_server::send_probes(const boost::system::error_code &ec) {
 
 void name_server::success(boost::shared_ptr<string> probed_name,
 	const boost::system::error_code &ec) {
-	deb2(cout << "koniec timera " << my_name << " " << *probed_name << " \n";)
 	// we have to check, that maybe the time has passed, but this
 	// function was invoked after receiving information, that someone
 	// uses this name. Therefore, we check if this function was invoked
@@ -81,7 +75,6 @@ void name_server::success(boost::shared_ptr<string> probed_name,
 		// according to standard, we have to anounce, that this name
 		// has been taken, so no one would use it for themself
 		mdns_server_->announce_name();
-		deb2(cout << "ustalono nazwę: " << my_name << " " << number << "\n";)
 	}
 }
 

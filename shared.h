@@ -44,7 +44,7 @@ using boost::asio::ip::icmp;
 // #define COMPRESS_PTR
 
 
-#define MAX_DELAY 5 // to change
+#define MAX_DELAY 10
 
 #define MDNS_PORT_NUM 5353
 #define SSH_PORT_NUM 22
@@ -57,15 +57,6 @@ using boost::asio::ip::icmp;
 
 #define MIN_UDP_SIZE 16
 #define MIN_MDNS_SIZE 12
-
-#define MY_INDEX "\0x34\0x71\0x71"
-
-#define deb(a)
-#define deb2(a)
-#define deb3(a)
-#define deb4(a)
-#define deb5(a)
-#define deb6(a) a
 
 extern uint16_t udp_port_num; // configured by -u option
 extern uint16_t ui_port_num; // configured by -U option

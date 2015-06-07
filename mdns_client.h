@@ -14,7 +14,6 @@ class mdns_client {
 		}
 
 		void send_query(dns_type type_, vector<string> fqdn) {
-			deb(cout << "\nzaczynam wysyłać mdnsa typu " << type_ << " \n";)
 			udp::endpoint receiver_endpoint;
 			receiver_endpoint.address(boost::asio::ip::address::from_string("224.0.0.251"));
 			receiver_endpoint.port(MDNS_PORT_NUM);
@@ -47,7 +46,6 @@ class mdns_client {
 			mdns_query_end_.class_(1);
 			oss << mdns_query_end_;
 
-
 			boost::shared_ptr<std::string> message(new std::string(oss.str()));
 			
 			socket_mdns->async_send_to(
@@ -56,7 +54,6 @@ class mdns_client {
 			  boost::bind(&mdns_client::handle_send, this,
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
-
 		}
 
 	private:
@@ -74,10 +71,7 @@ class mdns_client {
 
 		void handle_send(//boost::shared_ptr<std::string> /*message*/,
 			const boost::system::error_code& /*error*/,
-			std::size_t /*bytes_transferred*/) {
-				
-			deb(cout << "wysłano!!!\n";)
-		}
+			std::size_t /*bytes_transferred*/) { }
 
 		boost::asio::deadline_timer timer_;
 };

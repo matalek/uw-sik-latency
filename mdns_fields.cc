@@ -15,7 +15,6 @@ vector<string> read_name(char buffer[], size_t& start, size_t size) {
 		name[len] = 0;
 		start += len;
 		res.push_back(name);
-		deb(std::cout << "imie: " << name << "\n";)
 	}
 	
 	return res;
@@ -45,7 +44,6 @@ vector<string> read_compressable_name(char buffer[], size_t& start, size_t size)
 			// response to PTR with fqdn: name._service._protocol.local,
 			// we only accept pointer to qname
 			if (!(12 <= start && start < real_start - 10)) throw bad_compression_exception{}; 
-			deb(cout << "kompresja do " << static_cast<int>(start) << "\n";)
 			continue;
 		}
 
@@ -55,7 +53,6 @@ vector<string> read_compressable_name(char buffer[], size_t& start, size_t size)
 		name[len] = 0;
 		start += len;
 		res.push_back(name);
-		deb(std::cout << "imie: " << name << "\n";)
 	}
 
 	if (compression_occured)

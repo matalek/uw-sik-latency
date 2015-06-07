@@ -174,9 +174,6 @@ class ipv4_address {
 			rep_[b] = static_cast<unsigned char>((n >> 16) & 0xFF);
 			rep_[c] = static_cast<unsigned char>((n >> 8) & 0xFF);
 			rep_[d] = static_cast<unsigned char>(n & 0xFF);
-			deb(for (size_t i = 0; i < 4; i++)
-				cout << static_cast<int>(rep_[i]) << " ";
-			cout << "\n"; )
 		}
 		
 		unsigned char rep_[4];

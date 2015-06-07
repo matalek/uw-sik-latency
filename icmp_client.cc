@@ -26,9 +26,7 @@ void icmp_client::measure(uint32_t address) {
 	echo_request.identifier(ICMP_ID);
 	echo_request.sequence_number(++sequence_number);
 	compute_checksum(echo_request, body.begin(), body.end());
-
-	deb(cout << "nadałem numer " << sequence_number << "\n";)
-
+	
 	// encode the request packet
 	boost::asio::streambuf request_buffer;
 	std::ostream os(&request_buffer);
@@ -36,15 +34,11 @@ void icmp_client::measure(uint32_t address) {
 
 	// save time of sending in map
 	icmp_start_times.insert(make_pair(sequence_number, get_time()));
-	
-	deb(cout << "zaraz wyślę zapytanie icmp\n";)
 
 	icmp::endpoint remote_icmp_endpoint{};
 	remote_icmp_endpoint.address(boost::asio::ip::address_v4(address));
 	// send the request
 	socket_icmp.send_to(request_buffer.data(), remote_icmp_endpoint);
-
-	deb(cout << "wysłałem zapytanie icmp\n";)
 
 	start_icmp_receive();
 }
@@ -83,10 +77,6 @@ void icmp_client::handle_icmp_receive(const boost::system::error_code& error, st
 	}
 	
 	is >> icmp_hdr;
-	
-	deb5(cout << "odebrałem icmp " <<
-		icmp_hdr.sequence_number() << " " << sequence_number << " " <<
-		static_cast<int>(icmp_hdr.type()) << "z adresu " << ipv4_hdr.source_address().to_string() << "\n";)
 
 	uint32_t address = ipv4_hdr.source_address().to_ulong();
 
@@ -102,8 +92,7 @@ void icmp_client::handle_icmp_receive(const boost::system::error_code& error, st
 		icmp_start_times.erase(it++);
 		if (computers.count(address))
 			computers[address]->notify_icmp(res);
-			
-		deb(cout << "Wynik pomiaru icmp: " << res << "\n";)
+
 	}
 	start_icmp_receive();
 }
