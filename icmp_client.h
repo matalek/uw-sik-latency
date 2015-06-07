@@ -5,8 +5,6 @@
 #include "icmp_header.hpp"
 #include "ipv4_header.hpp"
 
-#define BUFFER_SIZE 1500
-
 class icmp_client {
 	public:
 		icmp_client();

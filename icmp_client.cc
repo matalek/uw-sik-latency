@@ -55,8 +55,7 @@ void icmp_client::start_icmp_receive()
 	icmp_reply_buffer.consume(icmp_reply_buffer.size());
 
 	// wait for a reply. We prepare the buffer to receive up to
-	// BUFFER_SIZE of data. Because of simple usage in our
-	// program, this number does not need to be very high
+	// BUFFER_SIZE of data.
 	socket_icmp.async_receive(icmp_reply_buffer.prepare(BUFFER_SIZE),
 	boost::bind(&icmp_client::handle_icmp_receive, this, boost::asio::placeholders::error, _2));
 }
