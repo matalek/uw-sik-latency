@@ -79,7 +79,7 @@ void get_address() {
 void set_candidate_name() {
 	// dodać obsługę błędu
 	char hostname[HOSTNAME_SIZE];
-	gethostname(hostname, HOSTNAME_SIZE);
+	if (gethostname(hostname, HOSTNAME_SIZE) == -1) syserr("gethostname");
 	my_name = hostname;
 }
 
