@@ -201,6 +201,14 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 			address_.address(my_address);
 			oss << mdns_answer_;
 			oss << address_;
+
+			boost::shared_ptr<std::string> message(new std::string(oss.str()));
+
+			socket_mdns->async_send_to(boost::asio::buffer(*message), receiver_endpoint,
+			  boost::bind(&mdns_server::handle_send, this,
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
+			
 		} else { // PTR
 			#ifdef COMPRESS_PTR
 				mdns_answer_.length(fqdn[0].size() + 2); //oss_fqdn.str().length());
@@ -212,14 +220,28 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 				oss << mdns_answer_;
 				oss << (oss_fqdn.str());
 			#endif
+
+			// we might be not the only one responding, so, according to
+			// RFC 6762 chapter 6., we should delay response by a random
+			// amount of time selected with uniform random distribution
+			// in the range 20-120 ms.
+
+			srand(time(NULL));
+			uint8_t wait_time = 20 + (rand() % 101);
+
+			deb4(cout << "czekam przez " << static_cast<int>(wait_time) << "\n";)
+
+			boost::shared_ptr<std::string> message(new std::string(oss.str()));
+			boost::shared_ptr<udp::endpoint> receiver_endpoint_to_send(new udp::endpoint(receiver_endpoint));
+
+			auto ptr_response_timer(new boost::asio::deadline_timer(*io_service, boost::posix_time::milliseconds(wait_time)));
+	
+			ptr_response_timer->async_wait(boost::bind(&mdns_server::send_ptr_response, this,
+				message,
+				receiver_endpoint_to_send,
+				boost::asio::placeholders::error));	
 		}
-
-		boost::shared_ptr<std::string> message(new std::string(oss.str()));
-
-		socket_mdns->async_send_to(boost::asio::buffer(*message), receiver_endpoint,
-		  boost::bind(&mdns_server::handle_send, this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
+		
 		deb(cout << "wysłano odpowiedź na mdns \n";)
 	}
 	catch (std::exception& e) {
@@ -227,10 +249,26 @@ void mdns_server::send_response(dns_type type_, service service_, bool send_via_
 	}
 }
 
+void mdns_server::send_ptr_response(boost::shared_ptr<string> message,
+	boost::shared_ptr<udp::endpoint> receiver_endpoint, 
+	const boost::system::error_code &ec) {
+
+	deb4(cout << "skończyłem czekać\n";)
+
+	socket_mdns->async_send_to(boost::asio::buffer(*message), *receiver_endpoint,
+		  boost::bind(&mdns_server::handle_send, this,
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred));
+	
+}
+
 void mdns_server::handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
-	vector<string> fqdn = read_compressable_name(recv_buffer_, start);
+	vector<string> fqdn = read_compressable_name(recv_buffer_, start);	
 	mdns_client_->send_query(dns_type::A, fqdn);
 }
+
+
+
 
 void mdns_server::handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start) {
 	// maybe someone announce, that he already uses the name, that we

@@ -36,7 +36,7 @@ vector<string> read_compressable_name(char buffer[], size_t& start) {
 			compression_occured = true;
 			real_end = start + 2;
 			start = ((len & 0x3F) << 8) + buffer[start];
-			deb4(cout << "kompresja do " << static_cast<int>(start) << "\n";)
+			deb(cout << "kompresja do " << static_cast<int>(start) << "\n";)
 			continue;
 		}
 
@@ -45,7 +45,7 @@ vector<string> read_compressable_name(char buffer[], size_t& start) {
 		name[len] = 0;
 		start += len;
 		res.push_back(name);
-		deb4(std::cout << "imie: " << name << "\n";)
+		deb(std::cout << "imie: " << name << "\n";)
 	}
 
 	if (compression_occured)

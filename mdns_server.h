@@ -30,6 +30,10 @@ class mdns_server {
 		// conditions are met)
 		void send_response(dns_type type_, service service_, bool send_via_unicast, bool legacy_unicast);
 
+		void send_ptr_response(boost::shared_ptr<string> message,
+			boost::shared_ptr<udp::endpoint> receiver_endpoint, 
+			const boost::system::error_code &ec);
+		
 		void handle_ptr_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start);
 
 		void handle_a_response(mdns_answer& mdns_answer_, vector<string> qname, size_t start);
