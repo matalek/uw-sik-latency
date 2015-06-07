@@ -52,8 +52,6 @@ void mdns_server::handle_receive(const boost::system::error_code& error,
 void mdns_server::receive_universal(char* buffer, bool via_unicast, bool mdns_port) {
 	size_t end;
 	
-	stringstream ss;
-	ss << recv_buffer_;
 	mdns_header mdns_header_;
 	mdns_header_.read(buffer);
 	end = 12; // we have read 12 bytes so far
