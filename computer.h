@@ -61,7 +61,6 @@ class computer : public boost::enable_shared_from_this<computer> {
 
 		tcp::socket socket_tcp;
 		tcp::endpoint remote_tcp_endpoint;
-
 		
 		char recv_buffer_[BUFFER_SIZE];
 

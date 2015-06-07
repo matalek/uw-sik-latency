@@ -60,9 +60,11 @@ void icmp_client::start_icmp_receive()
 	boost::bind(&icmp_client::handle_icmp_receive, this, boost::asio::placeholders::error, _2));
 }
 
-void icmp_client::handle_icmp_receive(const boost::system::error_code& ec, std::size_t length) {
-	if (ec == boost::asio::error::operation_aborted)
+void icmp_client::handle_icmp_receive(const boost::system::error_code& error, std::size_t length) {
+	if (error) {
+		start_icmp_receive();
 		return;
+	}
 	
 	// the actual number of bytes received is committed to the buffer so that we
 	// can extract it using a std::istream object.

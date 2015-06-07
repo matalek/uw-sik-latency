@@ -134,10 +134,9 @@ void computer::measure_udp() {
 		boost::asio::placeholders::bytes_transferred));
 }
 
-void computer::handle_send_udp(const boost::system::error_code& ec/*error*/,
+void computer::handle_send_udp(const boost::system::error_code& error,
 	std::size_t /*bytes_transferred*/) {
-	if (ec == boost::asio::error::operation_aborted)
-		return;
+	if (error) return;
 	// reading
 	socket_udp.async_receive_from(
 		boost::asio::buffer(recv_buffer_), remote_udp_endpoint,
@@ -147,11 +146,10 @@ void computer::handle_send_udp(const boost::system::error_code& ec/*error*/,
 	
 }
 
-void computer::handle_receive_udp(const boost::system::error_code& ec/*error*/,
-  std::size_t /*bytes_transferred*/) {
+void computer::handle_receive_udp(const boost::system::error_code& error,
+  std::size_t size /*bytes_transferred*/) {
 
-	if (ec == boost::asio::error::operation_aborted)
-		return;
+	if (error || size > BUFFER_SIZE) return;
 	// calculating and saving time
 	deb(cout << "odpowiedź na udp\n";)
 
@@ -194,9 +192,8 @@ void computer::measure_tcp() {
 }
 
 void computer::handle_connect_tcp(boost::shared_ptr<uint64_t> start_time,
-	const boost::system::error_code& ec /*error*/) {
-	if (ec == boost::asio::error::operation_aborted)
-		return;
+	const boost::system::error_code& error) {
+	if (error) return;
 	
 	// time of receiving answer
 	uint64_t end_time = get_time();
