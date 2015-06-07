@@ -83,7 +83,7 @@ void icmp_client::handle_icmp_receive(const boost::system::error_code& error, st
 	// we can receive all ICMP packets received by the host, so we need to
 	// filter out only the echo replies that match the our identifier and
 	// expected sequence number
-	map<unsigned short, uint64_t>::iterator it;
+	map<uint16_t, uint64_t>::iterator it;
 	if (is && icmp_hdr.type() == icmp_header::echo_reply
 		&& icmp_hdr.identifier() == ICMP_ID
 		&& (it = icmp_start_times.find(icmp_hdr.sequence_number())) != icmp_start_times.end()) {

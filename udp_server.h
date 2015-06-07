@@ -22,7 +22,7 @@ void udp_delay_server() {
 			// calculating current time
 			struct timeval tv;
 			gettimeofday(&tv,NULL);
-			unsigned long long time = 1000000 * tv.tv_sec + tv.tv_usec;
+			uint64_t time = 1000000 * tv.tv_sec + tv.tv_usec;
 
 			// creating message
 			boost::array<uint64_t, 2> message;

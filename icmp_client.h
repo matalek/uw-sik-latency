@@ -18,9 +18,9 @@ class icmp_client {
 
 		void handle_icmp_receive(const boost::system::error_code& ec, std::size_t length);
 
-		map<unsigned short, uint64_t> icmp_start_times;
+		map<uint16_t, uint64_t> icmp_start_times;
 		icmp::socket socket_icmp;
-		unsigned short sequence_number;
+		uint16_t sequence_number;
 		boost::asio::streambuf icmp_reply_buffer;
 };
 
