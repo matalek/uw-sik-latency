@@ -12,8 +12,7 @@ name_server* name_server_;
 
 
 name_server::name_server() : name(my_name), number(1),
-	timer_(*io_service, boost::posix_time::seconds(MAX_DELAY)),
-	timer_probes(*io_service) {
+	timer_(*io_service, boost::posix_time::seconds(MAX_DELAY)) {
 	send_query();
 }
 

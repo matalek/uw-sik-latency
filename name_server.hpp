@@ -27,7 +27,6 @@ class name_server {
 		int number;
 		
 		boost::asio::deadline_timer timer_;
-		boost::asio::deadline_timer timer_probes;
 
 };
 
