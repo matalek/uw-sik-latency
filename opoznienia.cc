@@ -49,6 +49,7 @@
 #include "mdns_server.h"
 #include "mdns_client.h"
 #include "udp_server.h"
+#include "name_server.h"
 #include "measurement_server.h"
 #include "ui.h"
 #include "computer.h"

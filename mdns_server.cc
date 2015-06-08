@@ -2,7 +2,7 @@
 #include "mdns_client.h"
 #include "computer.h"
 #include "mdns_fields.h"
-#include "name_server.hpp"
+#include "name_server.h"
 #include "mdns_server.h"
 
 using namespace std;

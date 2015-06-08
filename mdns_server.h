@@ -2,8 +2,8 @@
 #define MDNS_SERVER_H
 
 #include "shared.h"
-#include "name_server.hpp"
 #include "computer.h"
+#include "mdns_fields.h"
 
 using namespace std;
 

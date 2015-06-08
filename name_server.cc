@@ -4,7 +4,7 @@
 #include "shared.h"
 #include "computer.h"
 #include "mdns_client.h"
-#include "name_server.hpp"
+#include "name_server.h"
 #include "mdns_server.h"
 
 mdns_client* mdns_client_;

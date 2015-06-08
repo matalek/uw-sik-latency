@@ -29,7 +29,7 @@ vector<string> read_compressable_name(char buffer[], size_t& start, size_t size)
 	
 	while (true) {
 		if (start >= size) throw too_small_exception{};
-		uint8_t len = buffer[start++]; // TO DO: add checking error
+		uint8_t len = buffer[start++];
 
 		if (!len) // end of name
 			break;
