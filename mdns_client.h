@@ -65,7 +65,7 @@ class mdns_client {
 			fqdn = { "_ssh", "_tcp", "local"};
 			send_query(dns_type::PTR, fqdn);
 			
-			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(exploration_time));
+			timer_.expires_from_now(boost::posix_time::seconds(exploration_time));
 			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
 		}
 
