@@ -130,7 +130,7 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			if (start_line + MAX_LINES < end)
 				end = start_line + MAX_LINES;
 
-			sort(lines.begin(), lines.end());
+			sort(lines.begin(), lines.end(), greater<pair<uint32_t, string> >());
 			
 			for (unsigned int i = start_line; i < end; i++)
 				message_ += lines[i].second + ((i != end - 1) ? "\n\r" : "");
