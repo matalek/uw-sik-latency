@@ -12,7 +12,7 @@ name_server* name_server_;
 
 
 name_server::name_server() : name(my_name), number(1),
-	timer_(*io_service, boost::posix_time::seconds(MAX_DELAY)) {
+	timer_(*io_service) {
 	send_query();
 }
 
@@ -59,7 +59,7 @@ void name_server::send_probes(const boost::system::error_code &ec) {
 	auto probed_name = boost::shared_ptr<string>(new string(my_name));
 
 	timer_.expires_from_now(boost::posix_time::seconds(MAX_DELAY));
-		timer_.async_wait(boost::bind(&name_server::success, this,
+	timer_.async_wait(boost::bind(&name_server::success, this,
 		probed_name,
 		boost::asio::placeholders::error));
 }

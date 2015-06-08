@@ -7,7 +7,7 @@
 
 class measurement_server {
 	public:
-		measurement_server() : timer_(*io_service, boost::posix_time::seconds(measurement_time)) {
+		measurement_server() : timer_(*io_service) {
 			measure();
 		}
 
@@ -23,7 +23,7 @@ class measurement_server {
 					// have expired
 					computers.erase(it++);
 			}
-			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(measurement_time));
+			timer_.expires_from_now(boost::posix_time::seconds(measurement_time));
 			timer_.async_wait(boost::bind(&measurement_server::measure, this));
 		}
 

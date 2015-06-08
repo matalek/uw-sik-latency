@@ -9,8 +9,8 @@ using namespace std;
 class mdns_client {
 	public:
 
-		mdns_client() : timer_(*io_service, boost::posix_time::seconds(exploration_time)) {
-			timer_.async_wait(boost::bind(&mdns_client::ask_for_services, this));
+		mdns_client() : timer_(*io_service) {
+			ask_for_services();
 		}
 
 		void send_query(dns_type type_, vector<string> fqdn) {
