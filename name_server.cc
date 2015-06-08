@@ -40,7 +40,7 @@ void name_server::send_query() {
 	uint8_t	wait_time = rand() % 251;
 
 	timer_.expires_from_now(boost::posix_time::milliseconds(wait_time));
-		timer_.async_wait(boost::bind(&name_server::send_probes, this,
+	timer_.async_wait(boost::bind(&name_server::send_probes, this,
 		boost::asio::placeholders::error));
 }
 

@@ -44,7 +44,8 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			// will echo, will suppress go ahead
 			uint8_t message_[6] = {255, 251, 1, 255, 251, 3};
 
-			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this));
+			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this,
+				boost::asio::placeholders::error));
 
 			boost::asio::async_write(socket_, boost::asio::buffer(message_),
 				boost::bind(&tcp_connection::handle_start, shared_from_this(),
@@ -142,8 +143,6 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 				boost::asio::placeholders::bytes_transferred));
 		}
 
-		
-
 		void write(char c) {
 			bool has_changed = false;
 			
@@ -179,20 +178,29 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection>{
 			start_line = 0;
 		}
 
-		void handle_timer() {
+		void handle_timer(const boost::system::error_code& error) {
+			if (error) return;
+			
 			refresh();
 			
 			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(ui_refresh_time));
-			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this));
+			timer_.async_wait(boost::bind(&tcp_connection::handle_timer, this,
+				boost::asio::placeholders::error));
 		}
 
-		void handle_start(const boost::system::error_code& /*error*/,
-		  size_t /*bytes_transferred*/) { refresh(); }
+		void handle_start(const boost::system::error_code& error,
+			size_t /*bytes_transferred*/) {
+			if (error) return;
+			refresh();
+		}
 
-		void handle_write(const boost::system::error_code& /*error*/,
-		  size_t /*bytes_transferred*/) { read(); }
+		void handle_write(const boost::system::error_code&,
+		  size_t /*bytes_transferred*/) {
+			read();
+		}
 
-		void handle_read(const boost::system::error_code& /*error*/) {
+		void handle_read(const boost::system::error_code& error) {
+			if (error) return;
 			std::istream response_stream(&response_);
 			char c;
 			response_stream >> c;
