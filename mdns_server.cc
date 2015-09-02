@@ -51,7 +51,11 @@ void mdns_server::receive_universal(char* buffer, size_t size, bool via_unicast,
 	size_t end;
 	
 	mdns_header mdns_header_;
-	mdns_header_.read(buffer);
+	try {
+		mdns_header_.read(buffer);
+	} catch (too_small_exception& ex) {
+		return;
+	}
 	end = 12; // we have read 12 bytes so far
 
 	vector<string> qname;
@@ -112,7 +116,11 @@ void mdns_server::receive_universal(char* buffer, size_t size, bool via_unicast,
 	} else if (!via_unicast && mdns_port) {
 		// handling response to query (QR set to 1)
 		mdns_answer mdns_answer_;
-		mdns_answer_.read(recv_buffer_, end, size);
+		try {
+			mdns_answer_.read(recv_buffer_, end, size);
+		} catch (too_small_exception& ex) {
+			return;
+		}
 		if (mdns_answer_.type() == dns_type::A) {
 			handle_a_response(mdns_answer_, qname, end, size);
 		} else if (mdns_answer_.type() == dns_type::PTR) {
