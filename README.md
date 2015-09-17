@@ -21,4 +21,4 @@ To sum up, program `latency` should be:
 * User Interface server.
 
 ### Grade ###
-For this assignment i have achieved the highest possible grade (6.0/6.0).
+For this assignment I have achieved the highest possible grade (6.0/6.0).
